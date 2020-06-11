@@ -7,10 +7,11 @@
 #   |       |
 #   |   ----
 
+
 #Import the needed libraries
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.action_chains import ActionChains
+import selenium.common.exceptions
 import time
 import types
 import json
@@ -54,6 +55,8 @@ def send_message(message):
     message = message to send
     """
 
+    message = str(message)
+
     global sendInput
     for toSend in message.splitlines():
         sendInput.clear()
@@ -67,13 +70,44 @@ def get_last_message():
     
     global browser
     #Get the messages
-    messages = browser.find_elements_by_class_name("_3FXB1")
+    messages = browser.find_elements_by_class_name("focusable-list-item")
     #Get the newest message, and if there isnt one, return None
     try:
-        newMessage = messages[len(messages) - 1].text
+        newMessage = messages[len(messages) - 1].find_element_by_css_selector(".selectable-text").text
+
         return newMessage
     except:
         return None
+
+def execute_on_message_commands():
+    """
+    Executes commands that are defined to run when a message has been send
+    """
+    #To prevent spam
+    global runnedMessageCommands
+    runnedMessageCommands = True
+    classesToCall = globals()["Answer"].__subclasses__()
+    for commandClass in classesToCall:
+        try:
+            if commandClass.on_message_commands is not None:
+                exec(commandClass.on_message_commands)
+        except AttributeError:
+            pass
+
+def execute_on_renew_commands():
+    """
+    Executes commands that are defined to run when the program checks for new messages
+    """
+    classesToCall = globals()["Answer"].__subclasses__()
+    for commandClass in classesToCall:
+        try:
+            if commandClass.on_renew_commands is not None:
+                exec(commandClass.on_renew_commands)
+        except AttributeError:
+            pass
+
+#Define the runnedRenewMessages variable
+runnedMessageCommands = False
 
 #Open Firefox
 
@@ -91,13 +125,18 @@ time.sleep(15)
 
 lastMessage = ""
 
-#Define the variable to send answers to
-
-sendInput = browser.find_elements_by_class_name("_2S1VP")[1]
-
 #Start the bot loop
 
 while True:
+    #Redefine the variable to send answers to
+    try:
+        sendInput = browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/footer/div[1]/div[2]/div/div[2]")
+    except selenium.common.exceptions.NoSuchElementException:
+        time.sleep(5)
+        continue
+    #Call the function to execute commands when the program checks for messages
+    if runnedMessageCommands is False:
+        execute_on_renew_commands()
     #Get the newest message, and if there isnt one, wait and try again
     newMessage = get_last_message()
     if newMessage is None:
@@ -105,8 +144,11 @@ while True:
         continue
     #If the message isn't the last message, then return an answer
     if newMessage != lastMessage:
-        #The last message is now this message
+        #The last message is now this message and the message commands can be runned again
+        runnedMessageCommands = False
         lastMessage = newMessage
+        #Call the function to execute commands when a message has been send
+        execute_on_message_commands()
         #Scan all the commands and check if there is a command matching the users input
         for command in commands:
             if command == newMessage.split()[0]:

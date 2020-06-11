@@ -39,6 +39,10 @@ commands = {
 #Define the default answer class to be inherited
 
 class Answer(object):
+    #Commands to execute when the user sends a message. These commands are a executed in the client
+    on_message_commands = None
+    #Commands to execute when the checks for a new message. These commands are a executed in the client
+    on_renew_commands = None
     def __init__(self, arguments):
         """
         Command class\n
@@ -59,6 +63,7 @@ class Answer(object):
         Returns the commands to be executed in the client
         """
         return self.commands_in_client
+    
 
 #Define the class for the !calculate command
 
@@ -205,7 +210,7 @@ class MoveBot(Answer):
 #These commands are required. sendInput will return an error if the user switch the chat without using !movebot
 global sendInput
 time.sleep(10)
-sendInput = browser.find_elements_by_class_name("_2S1VP")[1]
+sendInput = browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/footer/div[1]/div[2]/div/div[2]")
             """
 
 #Define the class for the !help command
