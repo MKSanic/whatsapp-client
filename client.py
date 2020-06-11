@@ -1,13 +1,3 @@
-#Made by 13 year old NaN8279
-#   |   ----
-#   |       |
-#   |       |
-#   |   ----
-#   |       |
-#   |       |
-#   |   ----
-
-
 #Import the needed libraries
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
