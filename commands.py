@@ -1,12 +1,3 @@
-#Made by 13 year old NaN8279
-#   |   ----
-#   |       |
-#   |       |
-#   |   ----
-#   |       |
-#   |       |
-#   |   ----
-
 #Import the libraries for the !wikipedia, the !translate, the !randomnumber, the !movebot and the !google commands
 import wikipedia
 from requests_html import HTMLSession
