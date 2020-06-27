@@ -296,7 +296,7 @@ def movebot(arguments):
     answer = "Bot has been moved to this chat"
     return answer
 
-@client.command("!debug", """Toggle debug modes"\n
+@client.command("!debug", """Toggle debug modes
                              <mode>
                              Modes are: exception, traceback and off""")
 def debug(arguments):
