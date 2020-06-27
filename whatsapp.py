@@ -13,7 +13,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 import selenium.common.exceptions
 import time
-
+import traceback
 
 
 class WhatsappClient(object):
@@ -28,6 +28,8 @@ class WhatsappClient(object):
         #Define the commands dictionary
         self.commands = {}
         self.on_messages = []
+        self.debug_exception = True
+        self.debug_traceback = False
 
 
 
@@ -88,13 +90,20 @@ class WhatsappClient(object):
             #Send the answer
             self.send_message(answer)
             return
-
-        if arguments[0] == "-S":
-            answer = functionName(arguments[1:])
-        else:
-            answer = functionName(arguments)
-            #Send the answer
-            self.send_message(answer)
+        try:
+            if arguments[0] == "-S":
+                answer = functionName(arguments[1:])
+            else:
+                answer = functionName(arguments)
+                #Send the answer
+                self.send_message(answer)
+        except Exception as e:
+            if self.debug_exception == True:
+                self.send_message("Error occured:\n %s" % e)
+            elif self.debug_traceback == True:
+                self.send_message("Error occured:\n %s" % traceback.format_exc())
+            else:
+                self.send_message("An unknown error occured")
 
     def execute_on_messages(self, message):
         """

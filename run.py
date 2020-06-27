@@ -108,10 +108,10 @@ def wikipedia_command(arguments):
         answer = "Error: page not found"
 
     #Return an error if the command failed
-
+    '''
     except:
         answer = "An unknown error occured"
-
+    '''
     return answer
 
 #Define the !google command
@@ -295,6 +295,28 @@ def movebot(arguments):
     client.sendInput = client.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/footer/div[1]/div[2]/div/div[2]")
     answer = "Bot has been moved to this chat"
     return answer
+
+@client.command("!debug", """Toggle debug modes"\n
+                             <mode>
+                             Modes are: exception, traceback and off""")
+def debug(arguments):
+    if len(arguments) < 1:
+        return "This command needs atleast one argument!"
+    if arguments[0] == "exception":
+        client.debug_exception = True
+        client.debug_traceback = False
+        return "Turned mode exception on"
+    elif arguments[0] == "traceback":
+        client.debug_exception = False
+        client.debug_traceback = True
+        return "Turned mode traceback on"
+    elif arguments[0] == "off":
+        client.debug_exception = False
+        client.debug_traceback = False
+        return "Turned debugging off"
+    else:
+        return "Unknown mode!"
+    
 
 #Start the Whatsapp Client
 client.run()
