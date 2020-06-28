@@ -28,12 +28,12 @@ class WhatsappClient(object):
         #Define the commands dictionary
         self.commands = {}
         self.on_messages = []
-        self.debug_exception = True
+        self.debug_exception = False
         self.debug_traceback = False
 
 
 
-    def command(self, name, helpMessage):
+    def command(self, name, helpMessage = None):
 
         """
         A command decorator\n
@@ -96,7 +96,8 @@ class WhatsappClient(object):
             else:
                 answer = functionName(arguments)
                 #Send the answer
-                self.send_message(answer)
+                if answer is not None:
+                    self.send_message(answer)
         except Exception as e:
             if self.debug_exception == True:
                 self.send_message("Error occured:\n %s" % e)
@@ -128,8 +129,28 @@ class WhatsappClient(object):
             self.sendInput.clear()
             self.sendInput.send_keys(toSend + "\n")
 
+    def send_file(self, file_path):
+        """
+        Sends a file to the user\n
+        file_path = file path for the file to send
+        """
 
-    def get_last_message(self, browser):
+        #Make the message a string
+        file_path = str(file_path)
+
+        #Get the button for attach files and click it
+        attach_file_button = self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/header/div[3]/div/div[2]")
+        attach_file_button.click()
+        #Find the file input box and send the file path
+        file_input = self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/header/div[3]/div/div[2]/span/div/div/ul/li[3]/button/input")
+        file_input.send_keys(file_path)
+        #Wait for the send button to pop up
+        time.sleep(0.5)
+        #Click the send button
+        send_button = self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[2]/div[2]/span/div/span/div/div/div[2]/span/div/div")
+        send_button.click()
+
+    def get_last_message(self):
 
         """
         Returns the last message\n
@@ -137,7 +158,7 @@ class WhatsappClient(object):
         """
     
         #Get the messages
-        messages = browser.find_elements_by_class_name("focusable-list-item")
+        messages = self.browser.find_elements_by_class_name("focusable-list-item")
         #Get the newest message, and if there isnt one, return None
         try:
             newMessage = messages[len(messages) - 1].find_element_by_css_selector(".selectable-text").text
