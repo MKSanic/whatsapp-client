@@ -22,7 +22,7 @@ class WhatsappClient(object):
     def __init__(self):
 
         """
-        A Whatsapp Client with commands
+        A Whatsapp Client
         """
 
         #Define the commands dictionary
@@ -38,8 +38,9 @@ class WhatsappClient(object):
         """
         A command decorator\n
         name = name of the command, for example !example\n
+        helpMessage = the help message for the user. Default is None\n
         Must be a function with 1 argument, the arguments the user gave\n
-        The function must return a string, the answer for the user
+        The string the function returns is the answer for the user. The function doesn't need to return something
         """
 
         #Add the command to the commands dictionary
@@ -88,7 +89,8 @@ class WhatsappClient(object):
         if len(arguments) < 1:
             answer = functionName(arguments)
             #Send the answer
-            self.send_message(answer)
+            if answer is not None:
+                self.send_message(answer)
             return
         try:
             if arguments[0] == "-S":
@@ -153,8 +155,7 @@ class WhatsappClient(object):
     def get_last_message(self):
 
         """
-        Returns the last message\n
-        browser = the browser with Whatsapp on
+        Returns the last message
         """
     
         #Get the messages
