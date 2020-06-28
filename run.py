@@ -5,6 +5,8 @@ import wikipedia
 from requests_html import HTMLSession
 from googletrans import Translator
 import random
+import pytube
+import os
 
 #Define the responses for the !autosend command
 autosend_responses = {}
@@ -316,7 +318,20 @@ def debug(arguments):
         return "Turned debugging off"
     else:
         return "Unknown mode!"
-    
+
+@client.command("!ytdownload", """YT downloader
+                                  <YT URL>""")
+def yt_downloader(arguments):
+    if len(arguments) < 1:
+        return "Please give 1 argument!"
+    vid = pytube.YouTube(arguments[0])
+    client.send_message("Video title: %s" % vid.title)
+    client.send_message("Downloading...")
+    vidstrm = vid.streams.first()
+    vidstrm.download("./")
+    client.send_message("Done!")
+    client.send_file(os.path.realpath("./%s") % vidstrm.default_filename)
+    os.remove("./%s" % vidstrm.default_filename)
 
 #Start the Whatsapp Client
 client.run()

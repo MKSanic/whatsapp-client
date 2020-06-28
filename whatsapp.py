@@ -146,11 +146,18 @@ class WhatsappClient(object):
         #Find the file input box and send the file path
         file_input = self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/header/div[3]/div/div[2]/span/div/div/ul/li[3]/button/input")
         file_input.send_keys(file_path)
-        #Wait for the send button to pop up
-        time.sleep(0.5)
-        #Click the send button
-        send_button = self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[2]/div[2]/span/div/span/div/div/div[2]/span/div/div")
-        send_button.click()
+        
+        file_is_sended = False
+        
+        #Wait for the send button to appear and click the send button
+        while file_is_sended is False:
+            try:
+                send_button = self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[2]/div[2]/span/div/span/div/div/div[2]/span/div/div")
+                send_button.click()
+                file_is_sended = True
+            except selenium.common.exceptions.NoSuchElementException:
+                time.sleep(0.5)
+                continue
 
     def get_last_message(self):
 
@@ -205,7 +212,7 @@ class WhatsappClient(object):
                 continue
             
             #Get the newest message, and if there isnt one, wait and try again
-            newMessage = self.get_last_message(self.browser)
+            newMessage = self.get_last_message()
             
             if newMessage is None:
                 time.sleep(0.5)
