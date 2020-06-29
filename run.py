@@ -15,7 +15,7 @@ autosend_responses = {}
 client = whatsapp.WhatsappClient()
 
 #Define the !help command
-@client.command("!help", "Returns help messages")
+@client.command("help", "Returns help messages")
 def helpMenu(arguments):
 
     #If there are no arguments given, return a list of commands
@@ -42,7 +42,7 @@ def helpMenu(arguments):
 
 #Define the !stop command
 
-@client.command("!stop", "Stops the Whatsapp Bot")
+@client.command("stop", "Stops the Whatsapp Bot")
 def stop(arguments):
 
     #Stop the Whatsapp Client and exit
@@ -53,8 +53,8 @@ def stop(arguments):
 
 #Define the !calculate command
 
-@client.command("!calculate", """Calculator
-                                 <first number> <calculation type> <second number>""")
+@client.command("calculate", """Calculator
+                                <first number> <calculation type> <second number>""")
 def calculate(arguments):
 
     #If no arguments given, return an error
@@ -62,27 +62,21 @@ def calculate(arguments):
             answer = "Error: no arguments given"
             return answer
 
-    try:
-
-        #Make sure the first character of the first argument is a number, for security
-        if not arguments[0][0].isdigit():
-            answer = "Error: first value is not a number"
-        else:
-            #Yes, I know, eval is very dangerous, but I couldnt think of anything else
-            answer = eval(arguments[0])
-
-    #Return an error if the command failed
-    except:
-        answer = "An unknown error occured"
+    #Make sure the first character of the first argument is a number, for security
+    if not arguments[0][0].isdigit():
+        answer = "Error: first value is not a number"
+    else:
+        #Yes, I know, eval is very dangerous, but I couldnt think of anything else
+        answer = eval(arguments[0])
     
     return answer
 
 
 #Define the !wikipedia command
 
-@client.command("!wikipedia", """Search for an article summary on Wikipedia
-                                 set_language <language>
-                                 <article>""")
+@client.command("wikipedia", """Search for an article summary on Wikipedia
+                                set_language <language>
+                                <article>""")
 def wikipedia_command(arguments):
     
     #If no arguments given, return an error
@@ -108,17 +102,12 @@ def wikipedia_command(arguments):
     except wikipedia.exceptions.PageError:
         answer = "Error: page not found"
 
-    #Return an error if the command failed
-    '''
-    except:
-        answer = "An unknown error occured"
-    '''
     return answer
 
 #Define the !google command
 
-@client.command("!google", """Search on Google
-                              <Google search>""")
+@client.command("google", """Search on Google
+                             <Google search>""")
 def google(arguments):
 
     #If no arguments given, return an error
@@ -129,34 +118,27 @@ def google(arguments):
 
     #Try to look up the search on google
 
-    try:
-
-        #Format the search argument
-        toSearch = " ".join(arguments).replace(" ", "+")
-        #Open a HTMLSession
-        request = HTMLSession()
-        #Get the google search webpage with the search argument
-        GoWebpage = request.get("https://www.google.com/search?q=%s" % toSearch)
-        #Get the title and the link of the first search
-        title = GoWebpage.html.find(".LC20lb",first=True).text
-        #Format the URL so it is working
-        link = GoWebpage.html.find(".iUh30", first=True).text.replace("›","/").replace(" ","")
-        #Return the answer
-        answer = "%s\n%s" % (title, link)
-
-    #Return an error if the command failed
-
-    except:
-        answer = "An unknown error occured"
+    #Format the search argument
+    toSearch = " ".join(arguments).replace(" ", "+")
+    #Open a HTMLSession
+    request = HTMLSession()
+    #Get the google search webpage with the search argument
+    GoWebpage = request.get("https://www.google.com/search?q=%s" % toSearch)
+    #Get the title and the link of the first search
+    title = GoWebpage.html.find(".LC20lb",first=True).text
+    #Format the URL so it is working
+    link = GoWebpage.html.find(".iUh30", first=True).text.replace("›","/").replace(" ","")
+    #Return the answer
+    answer = "%s\n%s" % (title, link)
 
     return answer
 
 #Define the !autosend command
 
-@client.command("!autosend", """Automatticly responds to messages with the message given in it
-                                add <message> <response>
-                                remove <message>
-                                list""")
+@client.command("autosend", """Automatticly responds to messages with the message given in it
+                               add <message> <response>
+                               remove <message>
+                               list""")
 def autosend(arguments):
     global autosend_responses
     #If there are no arguments given, return an error
@@ -211,8 +193,8 @@ def auto_respond(message):
 
 #Define the !translate command
 
-@client.command("!translate", """Google Translate
-                                 <source language> <destination language> <sentence>""")
+@client.command("translate", """Google Translate
+                                <source language> <destination language> <sentence>""")
 def translate(arguments):
 
     #There are 3 arguments needed
@@ -235,8 +217,8 @@ def translate(arguments):
 
 #Define the !random command
 
-@client.command("!random", """Returns a random number
-                              <minimum number> <maximum number>""")
+@client.command("random", """Returns a random number
+                             <minimum number> <maximum number>""")
 def randomnumber(arguments):
     #If there are less than 2 arguments given, return an error
     if len(arguments) < 2:
@@ -251,20 +233,14 @@ def randomnumber(arguments):
     
     #Try to get a random number. If failing, return an error
     
-    try:
-        answer = random.randint(int(arguments[0]),int(arguments[1]))
-    
-    #Return an error if the command failed
-    
-    except:
-        answer = "An unknown error occured"
+    answer = random.randint(int(arguments[0]),int(arguments[1]))
     
     return answer
 
 #Define the !spam command
 
-@client.command("!spam", """Spams the chat
-                            <how many times to spam> <spam message>""")
+@client.command("spam", """Spams the chat
+                           <how many times to spam> <spam message>""")
 def spam(arguments):
     
     #Return an error if there are less than 2 arguments given
@@ -289,7 +265,7 @@ def spam(arguments):
 
 #Define the !movebot command
 
-@client.command("!movebot", "Move the bot to another chat")
+@client.command("movebot", "Move the bot to another chat")
 def movebot(arguments):
     #These commands are required. Selenium will return an error if the user switch the chat without using !movebot
     time.sleep(10)
@@ -297,9 +273,9 @@ def movebot(arguments):
     answer = "Bot has been moved to this chat"
     return answer
 
-@client.command("!debug", """Toggle debug modes
-                             <mode>
-                             Modes are: exception, traceback and off""")
+@client.command("debug", """Toggle debug modes
+                            <mode>
+                            Modes are: exception, traceback and off""")
 def debug(arguments):
     if len(arguments) < 1:
         return "This command needs atleast one argument!"
@@ -318,8 +294,8 @@ def debug(arguments):
     else:
         return "Unknown mode!"
 
-@client.command("!ytdownload", """YT downloader
-                                  <YT URL>""")
+@client.command("ytdownload", """YT downloader
+                                 <YT URL>""")
 def yt_downloader(arguments):
     if len(arguments) < 1:
         return "Please give 1 argument!"
@@ -334,6 +310,13 @@ def yt_downloader(arguments):
     except whatsapp.FileTooBigError:
         client.send_message("File too big to be sended!")
     os.remove("./%s" % vidstrm.default_filename)
+
+@client.command("prefix", "Set the command prefix")
+def prefix(arguments):
+    if len(arguments) < 1:
+        return "This command needs atleast one argument!"
+    client.command_prefix = str(arguments[0])[0]
+    return "Set command prefix to %s" % str(arguments[0])[0]
 
 #Start the Whatsapp Client
 client.run()

@@ -30,6 +30,7 @@ class WhatsappClient(object):
         self.commands = {}
         self.on_messages = []
         self.on_loops = []
+        self.command_prefix = "!"
         self.debug_exception = False
         self.debug_traceback = False
 
@@ -38,8 +39,10 @@ class WhatsappClient(object):
 
         """
         A command decorator\n
-        name = name of the command, for example !example\n
+        name = name of the command without the prefix, for example 'test'\n
+        The prefix of a command is the command_prefix variable of this class
         helpMessage = the help message for the user. Default is None\n
+        The help message is fully optional, it just helps if you want to make a !help command
         Must be a function with 1 argument, the arguments the user gave\n
         The string the function returns is the answer for the user. The function doesn't need to return something
         """
@@ -262,7 +265,7 @@ class WhatsappClient(object):
             #Get the newest message, and if there isnt one, wait and try again
             newMessage = self.get_last_message()
             
-            if newMessage is None:
+            if newMessage is None or newMessage == "":
                 time.sleep(0.5)
                 continue
             
@@ -272,20 +275,35 @@ class WhatsappClient(object):
                 lastMessage = newMessage
 
                 self.process_message_listeners(newMessage)
-            
+
+                #Check if the message starts with the command prefix and if it doesn't, continue
+
+                if newMessage[0] != self.command_prefix:
+                    continue
+
+                commandMessage = newMessage[1:]
+
+                #If the command is not in the commands dictionary, return an error
+                if not commandMessage.split()[0] in self.commands:
+                    self.send_message("Command not found!")
+                    continue
+
                 #Scan all the commands and check if there is a command matching the users input
             
                 for command in self.commands:
-                    if command == newMessage.split()[0]:
+                    if command == commandMessage.split()[0]:
             
                         #Get the function name, and the arguments
             
                         functionName = self.commands[command][0]
-                        arguments = newMessage.split()[1:]
+                        arguments = commandMessage.split()[1:]
             
                         #Send the result to the user
             
                         self.process_commands(functionName, arguments)
+                        
+                        #Continue
+                        break
 
     def stop(self):
         
