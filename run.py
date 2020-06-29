@@ -330,7 +330,10 @@ def yt_downloader(arguments):
     vidstrm = vid.streams.first()
     vidstrm.download("./")
     client.send_message("Done!")
-    client.send_file(os.path.realpath("./%s") % vidstrm.default_filename)
+    try:
+        client.send_file(os.path.realpath("./%s") % vidstrm.default_filename)
+    except whatsapp.FileTooBigError:
+        client.send_message("File too big to be sended!")
     os.remove("./%s" % vidstrm.default_filename)
 
 #Start the Whatsapp Client
