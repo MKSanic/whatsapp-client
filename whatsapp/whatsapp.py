@@ -247,10 +247,6 @@ class WhatsappClient(object):
 
         while self.running:
 
-            #Run the on_loop listeners
-
-            self.process_loop_listeners()
-
             #Redefine the variable to send answers to, to prevent errors
             
             try:
@@ -258,6 +254,10 @@ class WhatsappClient(object):
             except:
                 time.sleep(5)
                 continue
+
+            #Run the on_loop listeners
+
+            self.process_loop_listeners()
             
             #Get the newest message, and if there isnt one, wait and try again
             newMessage = self.get_last_message()
