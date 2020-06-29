@@ -16,6 +16,7 @@ import traceback
 import os
 from .exceptions import FileTooBigError
 
+
 class WhatsappClient(object):
 
 
@@ -28,9 +29,9 @@ class WhatsappClient(object):
         #Define the commands dictionary
         self.commands = {}
         self.on_messages = []
+        self.on_loops = []
         self.debug_exception = False
         self.debug_traceback = False
-
 
 
     def command(self, name, helpMessage = None):
@@ -65,7 +66,7 @@ class WhatsappClient(object):
         Must be a function with 1 argument, the message the user send\n
         """
 
-        #Add the listener to the on_message dictionary
+        #Add the listener to the on_message list
 
         self.on_messages.append(on_message_function)
         
@@ -76,8 +77,25 @@ class WhatsappClient(object):
         
         return run_on_message
 
+    def on_loop(self, on_loop_function):
+        
+        """
+        A on_loop decorator\n
+        This runs everytime the bot checks for new messages
+        """
 
-    def command_parser(self, functionName, arguments):
+        #Add the listener to the on_loops list
+
+        self.on_loops.append(on_loop_function)
+        
+        #Define the function to run the listener
+        def run_on_message():
+
+            on_loop_function()
+        
+        return run_on_message
+
+    def process_commands(self, functionName, arguments):
 
         """
         Parses commands\n
@@ -85,36 +103,56 @@ class WhatsappClient(object):
         arguments = arguments the user gave
         """
 
-        #Get the answer
-        if len(arguments) < 1:
-            answer = functionName(arguments)
-            #Send the answer
-            if answer is not None:
-                self.send_message(answer)
-            return
         try:
+            #If the first argument isn't -S, run the function and return an answer if the answer is not None
+            if len(arguments) < 1:
+                answer = functionName(arguments)
+                #Send the answer if the function didn't return None
+                if answer is not None:
+                    self.send_message(answer)
+                return
+
+            #If the first argument is -S, run the function, but don't return an answer
             if arguments[0] == "-S":
                 answer = functionName(arguments[1:])
+            #Else, run the function and send an answer if the answer isn't None
             else:
                 answer = functionName(arguments)
                 #Send the answer
                 if answer is not None:
                     self.send_message(answer)
+        
+        #If there are any errors while running the function, handle the exception
         except Exception as e:
+            #If the debug exception mode is turned on, send the exception to Whatsapp
             if self.debug_exception == True:
                 self.send_message("Error occured:\n %s" % e)
+            #Else, if the debug tracebac mode is turned on, send the traceback to Whatsapp
             elif self.debug_traceback == True:
                 self.send_message("Error occured:\n %s" % traceback.format_exc())
+            #Else, send an error message to Whatsapp
             else:
                 self.send_message("An unknown error occured")
 
-    def execute_on_messages(self, message):
+    def process_message_listeners(self, message):
         """
         Executes all on message listeners
         """
+        #Get the message listeners
         on_message_listeners = self.on_messages
+        #Run the message listeners
         for listener in on_message_listeners:
             listener(message)
+
+    def process_loop_listeners(self):
+        """
+        Executes all on loop listeners
+        """
+        #Get the message listeners
+        on_loop_listeners = self.on_loops
+        #Run the message listeners
+        for listener in on_loop_listeners:
+            listener()
 
     def send_message(self, message):
 
@@ -126,7 +164,7 @@ class WhatsappClient(object):
         #Make the message a string
         message = str(message)
 
-        #Send the message
+        #Send a message for each line in the message to send
         for toSend in message.splitlines():
             self.sendInput.clear()
             self.sendInput.send_keys(toSend + "\n")
@@ -140,7 +178,7 @@ class WhatsappClient(object):
         #Make the message a string
         file_path = str(file_path)
 
-        #Make sure the file is under the limit of 64MB
+        #Make sure the file is under the limit of 64MB, else, raise an error
 
         file_size = os.path.getsize(file_path)
         if file_size > 64000000:
@@ -207,9 +245,13 @@ class WhatsappClient(object):
 
         #Start the bot loop
 
-        while self.running == True:
+        while self.running:
 
-            #Redefine the variable to send answers to
+            #Run the on_loop listeners
+
+            self.process_loop_listeners()
+
+            #Redefine the variable to send answers to, to prevent errors
             
             try:
                 self.sendInput = self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/footer/div[1]/div[2]/div/div[2]")
@@ -229,7 +271,7 @@ class WhatsappClient(object):
             if newMessage != lastMessage:
                 lastMessage = newMessage
 
-                self.execute_on_messages(newMessage)
+                self.process_message_listeners(newMessage)
             
                 #Scan all the commands and check if there is a command matching the users input
             
@@ -243,13 +285,24 @@ class WhatsappClient(object):
             
                         #Send the result to the user
             
-                        self.command_parser(functionName, arguments)
+                        self.process_commands(functionName, arguments)
 
     def stop(self):
         
         """
         Stops the Whatsapp Client
         """
-        
+        #Stop the bot loop
         self.running = False
+        #Log out of Whatsapp
+        #Click the button for the menu
+        self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[3]/div/header/div[2]/div/span/div[3]/div").click()
+        #Click the log out button
+        self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[3]/div/header/div[2]/div/span/div[3]/span/div/ul/li[6]").click()
+        #If there is a log out popup, click log out
+        try:
+            self.browser.find_element_by_xpath("/html/body/div[1]/div/span[2]/div/div/div/div/div/div/div[3]/div[2]").click()
+        except selenium.common.exceptions.NoSuchElementException:
+            pass
+        #Quit the browser
         self.browser.quit()

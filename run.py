@@ -45,10 +45,9 @@ def helpMenu(arguments):
 @client.command("!stop", "Stops the Whatsapp Bot")
 def stop(arguments):
 
-    #Stop the Whatsapp Client, wait 5 seconds, and exit
+    #Stop the Whatsapp Client and exit
 
     client.stop()
-    time.sleep(5)
     exit()
 
 
