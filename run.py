@@ -5,7 +5,7 @@ import wikipedia
 from requests_html import HTMLSession
 from googletrans import Translator
 import random
-import pytube
+from pytube import YouTube
 import os
 import importlib
 
@@ -300,7 +300,7 @@ def debug(arguments):
 def yt_downloader(arguments):
     if len(arguments) < 1:
         return "Please give 1 argument!"
-    vid = pytube.YouTube(arguments[0])
+    vid = YouTube(arguments[0])
     client.send_message("Video title: %s" % vid.title)
     client.send_message("Downloading...")
     vidstrm = vid.streams.first()
