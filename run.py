@@ -8,6 +8,7 @@ import random
 from pytube import YouTube
 import os
 import importlib
+from gtts import gTTS
 
 #Define the responses for the !autosend command
 autosend_responses = {}
@@ -331,6 +332,19 @@ def reload(arguments):
     client.stop()
     importlib.reload(whatsapp)
     client.run()
+
+@client.command("speak", """Returns the text given in a mp3
+                            <language> <text>""")
+def speak(arguments):
+    try:
+        speaker = gTTS(lang=arguments[0], text=' '.join(arguments[1:]))
+        speaker.save("./message.mp3")
+    except AssertionError:
+        return "Please give 2 arguments!"
+    except ValueError:
+        return "Language not supported!"
+    client.send_file(os.path.realpath("./message.mp3"), file_type="img")
+    os.remove("./message.mp3")
 
 #Start the Whatsapp Client
 client.run()
