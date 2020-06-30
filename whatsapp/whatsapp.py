@@ -10,11 +10,13 @@
 
 #Import the needed libraries
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 import selenium.common.exceptions
 import time
 import traceback
 import os
-from .exceptions import FileTooBigError
+from .exceptions import FileTooBigError, NoFileMessageError
+from webdriver_manager.chrome import ChromeDriverManager
 
 
 class WhatsappClient(object):
@@ -145,7 +147,19 @@ class WhatsappClient(object):
         on_message_listeners = self.on_messages
         #Run the message listeners
         for listener in on_message_listeners:
-            listener(message)
+            try:
+                listener(message)
+            #If there are any errors while running the function, handle the exception
+            except Exception as e:
+                #If the debug exception mode is turned on, send the exception to Whatsapp
+                if self.debug_exception == True:
+                    self.send_message("Error occured:\n %s" % e)
+                #Else, if the debug tracebac mode is turned on, send the traceback to Whatsapp
+                elif self.debug_traceback == True:
+                    self.send_message("Error occured:\n %s" % traceback.format_exc())
+                #Else, send an error message to Whatsapp
+                else:
+                    self.send_message("An unknown error occured")
 
     def process_loop_listeners(self):
         """
@@ -155,7 +169,19 @@ class WhatsappClient(object):
         on_loop_listeners = self.on_loops
         #Run the message listeners
         for listener in on_loop_listeners:
-            listener()
+            try:
+                listener()
+            #If there are any errors while running the function, handle the exception
+            except Exception as e:
+                #If the debug exception mode is turned on, send the exception to Whatsapp
+                if self.debug_exception == True:
+                    self.send_message("Error occured:\n %s" % e)
+                #Else, if the debug tracebac mode is turned on, send the traceback to Whatsapp
+                elif self.debug_traceback == True:
+                    self.send_message("Error occured:\n %s" % traceback.format_exc())
+                #Else, send an error message to Whatsapp
+                else:
+                    self.send_message("An unknown error occured")
 
     def send_message(self, message):
 
@@ -169,8 +195,11 @@ class WhatsappClient(object):
 
         #Send a message for each line in the message to send
         for toSend in message.splitlines():
-            self.sendInput.clear()
-            self.sendInput.send_keys(toSend + "\n")
+            try:
+                self.sendInput.clear()
+                self.sendInput.send_keys(toSend + "\n")
+            except selenium.common.exceptions.StaleElementReferenceException:
+                return None
 
     def send_file(self, file_path):
         """
@@ -222,25 +251,44 @@ class WhatsappClient(object):
         except:
             return None
 
+    def get_last_message_element(self):
+        
+        """
+        Returns the last message elements
+        """
+    
+        #Get the messages
+        messages = self.browser.find_elements_by_class_name("focusable-list-item")
+        #Get the newest message, and if there isnt one, return None
+        try:
+            newMessage = messages[len(messages) - 1]
+
+            return newMessage
+        except:
+            return None
 
     def run(self):
         """
         Starts the Whatsapp Client
         """
+
+        options = Options()
+        options.add_experimental_option("prefs", {
+            "download.default_directory": os.path.realpath("./"),
+            "download.prompt_for_download": False,
+            "download.directory_upgrade": True,
+            "safebrowsing.enabled": True
+        })
         
         self.running = True
 
         #Open Firefox
 
-        self.browser = webdriver.Firefox()
+        self.browser = webdriver.Chrome(ChromeDriverManager().install())
 
         #Goto Whatsapp Web
 
         self.browser.get("https://web.whatsapp.com/")
-
-        #Wait for the user to scan the QR-code and select a chat
-
-        time.sleep(15)
 
         #Define the lastMessage variable to prevent spam
 

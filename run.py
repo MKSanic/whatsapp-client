@@ -7,6 +7,7 @@ from googletrans import Translator
 import random
 import pytube
 import os
+import importlib
 
 #Define the responses for the !autosend command
 autosend_responses = {}
@@ -317,6 +318,33 @@ def prefix(arguments):
         return "This command needs atleast one argument!"
     client.command_prefix = str(arguments[0])[0]
     return "Set command prefix to %s" % str(arguments[0])[0]
+
+@client.command("exec", "Executes script in program")
+def execute(arguments):
+    try:
+        exec(str(arguments[0]), globals())
+    except Exception as e:
+        client.send_message(e)
+
+@client.command("reload", "Reloads Whatsapp package. Restarts client")
+def reload(arguments):
+    client.stop()
+    importlib.reload(whatsapp)
+    client.run()
+
+@client.on_loop
+def download():
+    done = False
+    if done == False:
+        messageElement = client.get_last_message_element()
+        if messageElement is None:
+            return
+        try:
+            client.download_file(messageElement)
+            done = True
+        except:
+            pass
+
 
 #Start the Whatsapp Client
 client.run()
