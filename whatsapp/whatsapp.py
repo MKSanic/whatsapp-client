@@ -15,7 +15,7 @@ import selenium.common.exceptions
 import time
 import traceback
 import os
-from .exceptions import FileTooBigError, NoFileMessageError, UnknownFileTypeError
+from .exceptions import FileTooBigError, NoFileMessageError, UnknownFileTypeError, CommandNotFoundError
 from webdriver_manager.chrome import ChromeDriverManager
 
 
@@ -62,6 +62,11 @@ class WhatsappClient(object):
 
         return add_command
     
+    def remove_command(self, name):
+        try:
+            self.commands.pop(name)
+        except KeyError:
+            raise CommandNotFoundError("The specified command couldn't be found")
 
     def on_message(self, on_message_function):
 
@@ -253,9 +258,18 @@ class WhatsappClient(object):
         messages = self.browser.find_elements_by_class_name("focusable-list-item")
         #Get the newest message, and if there isnt one, return None
         try:
-            newMessage = messages[len(messages) - 1].find_element_by_css_selector(".selectable-text").text
+            newMessage = messages[len(messages) - 1]
+            newMessageText = newMessage.find_element_by_css_selector(".selectable-text").text
+            try:
+                emotes = newMessage.find_elements_by_class_name(".emoji")
+                for emote in emotes:
+                    print(emote.get_attribute("alt"))
+            except IndexError:
+                pass
+            except selenium.common.exceptions.NoSuchElementException:
+                pass
 
-            return newMessage
+            return newMessageText
         except:
             return None
 
@@ -372,7 +386,10 @@ class WhatsappClient(object):
         #Click the button for the menu
         self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[3]/div/header/div[2]/div/span/div[3]/div").click()
         #Click the log out button
+        time.sleep(1)
         self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[3]/div/header/div[2]/div/span/div[3]/span/div/ul/li[6]").click()
+        #Wait to log out
+        time.sleep(1)
         #If there is a log out popup, click log out
         try:
             self.browser.find_element_by_xpath("/html/body/div[1]/div/span[2]/div/div/div/div/div/div/div[3]/div[2]").click()
