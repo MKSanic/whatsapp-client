@@ -15,7 +15,7 @@ import selenium.common.exceptions
 import time
 import traceback
 import os
-from .exceptions import FileTooBigError, NoFileMessageError
+from .exceptions import FileTooBigError, NoFileMessageError, UnknownFileTypeError
 from webdriver_manager.chrome import ChromeDriverManager
 
 
@@ -201,10 +201,11 @@ class WhatsappClient(object):
             except selenium.common.exceptions.StaleElementReferenceException:
                 return None
 
-    def send_file(self, file_path):
+    def send_file(self, file_path, file_type="other"):
         """
         Sends a file to the user\n
-        file_path = file path for the file to send
+        file_path = file path for the file to send\n
+        file_type = type of the file. String. Default other, can be other or img
         """
 
         #Make the message a string
@@ -220,11 +221,18 @@ class WhatsappClient(object):
         attach_file_button = self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/header/div[3]/div/div[2]")
         attach_file_button.click()
         #Find the file input box and send the file path
-        file_input = self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/header/div[3]/div/div[2]/span/div/div/ul/li[3]/button/input")
+        if file_type == "other":
+            file_input = self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/header/div[3]/div/div[2]/span/div/div/ul/li[3]/button/input")
+        elif file_type == "img":
+            file_input = self.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/header/div[3]/div/div[2]/span/div/div/ul/li[1]/button/input")
+        else:
+            raise UnknownFileTypeError("There was given an unknown file type to the send_file function")
         file_input.send_keys(file_path)
         
         file_is_sended = False
         
+        time.sleep(0.5)
+
         #Wait for the send button to appear and click the send button
         while file_is_sended is False:
             try:

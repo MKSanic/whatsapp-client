@@ -307,7 +307,7 @@ def yt_downloader(arguments):
     vidstrm.download("./")
     client.send_message("Done!")
     try:
-        client.send_file(os.path.realpath("./%s") % vidstrm.default_filename)
+        client.send_file(os.path.realpath("./%s") % vidstrm.default_filename, file_type="img")
     except whatsapp.FileTooBigError:
         client.send_message("File too big to be sended!")
     os.remove("./%s" % vidstrm.default_filename)
@@ -331,20 +331,6 @@ def reload(arguments):
     client.stop()
     importlib.reload(whatsapp)
     client.run()
-
-@client.on_loop
-def download():
-    done = False
-    if done == False:
-        messageElement = client.get_last_message_element()
-        if messageElement is None:
-            return
-        try:
-            client.download_file(messageElement)
-            done = True
-        except:
-            pass
-
 
 #Start the Whatsapp Client
 client.run()
