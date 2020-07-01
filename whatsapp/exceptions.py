@@ -6,3 +6,5 @@ class UnknownFileTypeError(Exception):
     pass
 class CommandNotFoundError(Exception):
     pass
+class UnknownChatError(Exception):
+    pass

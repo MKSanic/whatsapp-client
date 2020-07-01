@@ -244,9 +244,11 @@ def spam(arguments):
 
 #Define the !movebot command
 
-@client.command("movebot", "Move the bot to another chat")
+@client.command("movebot", """Move the bot to another chat
+                              <chat>""")
 def movebot(arguments):
     #These commands are required. Selenium will return an error if the user switch the chat without using !movebot
+    client.set_chat(' '.join(arguments[0:]))
     time.sleep(10)
     client.sendInput = client.browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/footer/div[1]/div[2]/div/div[2]")
     answer = "Bot has been moved to this chat"
@@ -278,7 +280,7 @@ def debug(arguments):
 def yt_downloader(arguments):
     if len(arguments) < 1:
         return "Please give 1 argument!"
-    vid = YouTube(arguments[0])
+    vid = YouTube(''.join(arguments[0:]))
     client.send_message("Video title: %s" % vid.title)
     client.send_message("Downloading...")
     vidstrm = vid.streams.first()

@@ -14,7 +14,7 @@ import selenium.common.exceptions
 import time
 import traceback
 import os
-from .exceptions import FileTooBigError, NoFileMessageError, UnknownFileTypeError, CommandNotFoundError
+from .exceptions import FileTooBigError, NoFileMessageError, UnknownFileTypeError, CommandNotFoundError, UnknownChatError
 from webdriver_manager.chrome import ChromeDriverManager
 
 
@@ -37,6 +37,17 @@ class WhatsappClient(object):
         self.debug_exception = False
         self.debug_traceback = False
 
+    def set_chat(self, chatName):
+        """
+        Sets the chat the bot is on\n
+        chatName = string, name of the chat to go to
+        """
+        chats = self.browser.find_element_by_id("pane-side").find_elements_by_tag_name("span")
+        for chat in chats:
+            if chat.text == chatName:
+                chat.click()
+                return
+        raise UnknownChatError("Couldn't find chat %s" % chatName)
 
     def command(self, name, helpMessage = None):
 
@@ -282,18 +293,28 @@ class WhatsappClient(object):
         #Get the newest message, and if there isnt one, return None
         try:
             newMessage = messages[len(messages) - 1]
-            newMessageText = newMessage.find_element_by_css_selector(".selectable-text").text
-            try:
-                emotes = newMessage.find_elements_by_class_name(".emoji")
-                for emote in emotes:
-                    emote.get_attribute("alt")
-            except IndexError:
-                pass
-            except selenium.common.exceptions.NoSuchElementException:
-                pass
+            newMessageTextElement = newMessage.find_element_by_css_selector(".selectable-text")
+            newMessageText = newMessageTextElement.text
+            
+            newMessageTextEmoji = self.browser.execute_script("""
+                                            var newMessage = arguments[0];
+                                            var text = newMessage.firstChild;
+                                            var child = text.firstChild;
+                                            var ret = "";
+                                            while(child) {
+                                            if (child.nodeType === Node.TEXT_NODE){
+                                                ret += child.textContent;
+                                            }
+                                            else if(child.tagName.toLowerCase() === "img"){
+                                                ret += child.alt;
+                                            }
+                                            child = child.nextSibling;
+                                            }
+                                            return ret;
+                                        """, newMessageTextElement)
 
             return newMessageText
-        except:
+        except Exception:
             return None
 
     def get_last_message_element(self):
