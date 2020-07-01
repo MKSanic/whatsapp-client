@@ -10,7 +10,6 @@
 
 #Import the needed libraries
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
 import selenium.common.exceptions
 import time
 import traceback
@@ -263,7 +262,7 @@ class WhatsappClient(object):
             try:
                 emotes = newMessage.find_elements_by_class_name(".emoji")
                 for emote in emotes:
-                    print(emote.get_attribute("alt"))
+                    emote.get_attribute("alt")
             except IndexError:
                 pass
             except selenium.common.exceptions.NoSuchElementException:
@@ -293,14 +292,6 @@ class WhatsappClient(object):
         """
         Starts the Whatsapp Client
         """
-
-        options = Options()
-        options.add_experimental_option("prefs", {
-            "download.default_directory": os.path.realpath("./"),
-            "download.prompt_for_download": False,
-            "download.directory_upgrade": True,
-            "safebrowsing.enabled": True
-        })
         
         self.running = True
 
