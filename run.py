@@ -16,32 +16,6 @@ autosend_responses = {}
 #Make a Whatsapp Client
 client = whatsapp.WhatsappClient()
 
-#Define the !help command
-@client.command("help", "Returns help messages")
-def helpMenu(arguments):
-
-    #If there are no arguments given, return a list of commands
-    
-    if len(arguments) == 0:
-    
-        answer = "List of commands:\n"
-        for command in client.commands:
-            answer = answer + "%s, " % command.replace("!","")
-    
-        return answer
-    
-    #Else, look in the command dictionary, if the command the user gave is found, return the help message for that command
-    
-    else:
-    
-        for command in client.commands:
-            if arguments[0] == command.replace("!", ""):
-                answer = client.commands[command][1]
-                
-                return answer
-    
-    return "Command not found!"
-
 #Define the !stop command
 
 @client.command("stop", "Stops the Whatsapp Bot")
@@ -345,6 +319,10 @@ def speak(arguments):
         return "Language not supported!"
     client.send_file(os.path.realpath("./message.mp3"), file_type="img")
     os.remove("./message.mp3")
+
+@client.global_argument("-S")
+def silent_command(function, arguments):
+    function(arguments)
 
 #Start the Whatsapp Client
 client.run()

@@ -29,8 +29,10 @@ class WhatsappClient(object):
 
         #Define the commands dictionary
         self.commands = {}
+        self.commands["help"] = [self.helpMenu, "Returns help messages"]
         self.on_messages = []
         self.on_loops = []
+        self.global_arguments = {}
         self.command_prefix = "!"
         self.debug_exception = False
         self.debug_traceback = False
@@ -41,9 +43,8 @@ class WhatsappClient(object):
         """
         A command decorator\n
         name = name of the command without the prefix, for example 'test'\n
-        The prefix of a command is the command_prefix variable of this class
+        The prefix of a command is the command_prefix variable of this class\n
         helpMessage = the help message for the user. Default is None\n
-        The help message is fully optional, it just helps if you want to make a !help command
         Must be a function with 1 argument, the arguments the user gave\n
         The string the function returns is the answer for the user. The function doesn't need to return something
         """
@@ -104,6 +105,27 @@ class WhatsappClient(object):
         
         return run_on_message
 
+    def global_argument(self, argument):
+        """
+        A global_argument decorator\n
+        name = name of the first argument after a command\n
+        The function runs instead of the normal process command function when the user gives the given argument\n
+        Must be a function with 2 argument, the first one being the function to run for the command, the second one to be the arguments\n
+        """
+
+        #Add the command to the commands dictionary
+        def add_command(process_command_function):
+
+            self.global_arguments[argument] = process_command_function
+            #Define the function to run the command
+            def run_command(functionName, arguments):
+
+                process_command_function(functionName, arguments)
+
+            return run_command
+
+        return add_command
+
     def process_commands(self, functionName, arguments):
 
         """
@@ -121,9 +143,11 @@ class WhatsappClient(object):
                     self.send_message(answer)
                 return
 
-            #If the first argument is -S, run the function, but don't return an answer
-            if arguments[0] == "-S":
-                answer = functionName(arguments[1:])
+            #If the first argument is in global_arguments, run the given function to process the command
+            for global_argument in self.global_arguments:
+                if arguments[0] == global_argument:
+                    self.global_arguments[global_argument](functionName, arguments[1:])
+                    return
             #Else, run the function and send an answer if the answer isn't None
             else:
                 answer = functionName(arguments)
@@ -287,6 +311,29 @@ class WhatsappClient(object):
             return newMessage
         except:
             return None
+
+    def helpMenu(self, arguments):
+        #If there are no arguments given, return a list of commands
+    
+        if len(arguments) == 0:
+    
+            answer = "List of commands:\n"
+            for command in self.commands:
+                answer = answer + "%s, " % command.replace("!","")
+    
+            return answer
+    
+        #Else, look in the command dictionary, if the command the user gave is found, return the help message for that command
+    
+        else:
+    
+            for command in self.commands:
+                if arguments[0] == command.replace("!", ""):
+                    answer = self.commands[command][1]
+                
+                    return answer
+    
+        return "Command not found!"
 
     def run(self):
         """
