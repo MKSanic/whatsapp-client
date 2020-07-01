@@ -13,6 +13,9 @@ from gtts import gTTS
 #Define the responses for the !autosend command
 autosend_responses = {}
 
+#Define the default language for the global argument -SP
+language = "en"
+
 #Make a Whatsapp Client
 client = whatsapp.WhatsappClient()
 
@@ -323,6 +326,19 @@ def speak(arguments):
 @client.global_argument("-S")
 def silent_command(function, arguments):
     function(arguments)
+
+
+@client.global_argument("-SP")
+def speak_command(function, arguments):
+    answer = function(arguments)
+    speaker = gTTS(lang=language, text=answer)
+    speaker.save("./message.mp3")
+    client.send_file(os.path.realpath("./message.mp3"), file_type="img")
+    os.remove("./message.mp3")
+
+@client.command("splang", "Sets the language for the -SP command")
+def splang(arguments):
+    language = arguments[0]
 
 #Start the Whatsapp Client
 client.run()

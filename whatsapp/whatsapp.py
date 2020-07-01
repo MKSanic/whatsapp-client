@@ -113,7 +113,7 @@ class WhatsappClient(object):
         Must be a function with 2 argument, the first one being the function to run for the command, the second one to be the arguments\n
         """
 
-        #Add the command to the commands dictionary
+        #Add the argument to the global_arguments dictionary
         def add_command(process_command_function):
 
             self.global_arguments[argument] = process_command_function
