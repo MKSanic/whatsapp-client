@@ -167,7 +167,7 @@ def auto_respond(message):
     global autosend_responses
     #If the message the user sent is in the response dictionary, then send the response
     for response in autosend_responses:
-        if response in message:
+        if response in message.return_contents():
             client.send_message(autosend_responses[response])
 
 #Define the !translate command

@@ -17,6 +17,8 @@ import os
 from .exceptions import FileTooBigError, NoFileMessageError
 from .exceptions import UnknownFileTypeError, CommandNotFoundError
 from .exceptions import UnknownChatError
+from .message import Message
+from .persons import Self, Other, Person
 from webdriver_manager.chrome import ChromeDriverManager
 
 
@@ -86,7 +88,7 @@ class WhatsappClient(object):
         """
         A on_message decorator\n
         This runs when a new mesage is received\n
-        Must be a function with 1 argument, the message the user send\n
+        Must be a function with 1 argument, a message object\n
         """
 
         # Add the listener to the on_message list
@@ -324,6 +326,11 @@ class WhatsappClient(object):
             new_message_text_element = new_message.find_element_by_css_selector(
                 ".selectable-text")
 
+            if "message-out" in new_message.get_attribute("class"):
+                sender = Person(Self)
+            else:
+                sender = Person(Other)
+
             new_message_text_emoji = self.browser.execute_script("""
                                             var new_message = arguments[0];
                                             var text = new_message.firstChild;
@@ -341,7 +348,7 @@ class WhatsappClient(object):
                                             return ret;
                                         """, new_message_text_element)
 
-            return new_message_text_emoji
+            return Message(sender, new_message_text_emoji)
         except Exception:
             return None
 
@@ -399,15 +406,16 @@ class WhatsappClient(object):
             self.process_loop_listeners()
 
             # Get the newest message, and if there isnt one, wait and try again
-            new_message = self.get_last_message()
-            if new_message is None or new_message == "":
+            new_message_object = self.get_last_message()
+            new_message = new_message_object.contents
+            if new_message is None:
                 time.sleep(0.5)
                 continue
 
             # If the message isn't the last message, then return an answer
             if new_message != last_message:
                 last_message = new_message
-                self.process_message_listeners(new_message)
+                self.process_message_listeners(new_message_object)
 
                 # Check if the message starts with the command prefix and if it
                 # doesn't, continue
