@@ -39,6 +39,22 @@ class WhatsappClient(object):
         self.debug_exception = False
         self.debug_traceback = False
 
+    def __handle_error(self, e):
+        # If the debug exception mode is turned on, send the exception to
+        # Whatsapp
+        if self.debug_exception == True:
+            self.send_message("Error occured:\n %s" % e)
+            
+        # Else, if the debug tracebac mode is turned on, send the traceback
+        # to Whatsapp
+        elif self.debug_traceback == True:
+            self.send_message("Error occured:\n %s" %
+                               traceback.format_exc())
+
+        # Else, send an error message to Whatsapp
+        else:
+            self.send_message("An unknown error occured")
+
     def set_chat(self, chat_name):
         """
         Sets the chat the bot is on\n
@@ -172,20 +188,7 @@ class WhatsappClient(object):
         # If there are any errors while running the function, handle the
         # exception
         except Exception as e:
-            # If the debug exception mode is turned on, send the exception to
-            # Whatsapp
-            if self.debug_exception == True:
-                self.send_message("Error occured:\n %s" % e)
-
-            # Else, if the debug tracebac mode is turned on, send the traceback
-            # to Whatsapp
-            elif self.debug_traceback == True:
-                self.send_message("Error occured:\n %s" %
-                                  traceback.format_exc())
-
-            # Else, send an error message to Whatsapp
-            else:
-                self.send_message("An unknown error occured")
+            self.__handle_error(e)
 
     def process_message_listeners(self, message):
         """
@@ -202,20 +205,7 @@ class WhatsappClient(object):
             # If there are any errors while running the function, handle the
             # exception
             except Exception as e:
-                # If the debug exception mode is turned on, send the exception
-                # to Whatsapp
-                if self.debug_exception == True:
-                    self.send_message("Error occured:\n %s" % e)
-
-                # Else, if the debug tracebac mode is turned on, send the
-                # traceback to Whatsapp
-                elif self.debug_traceback == True:
-                    self.send_message("Error occured:\n %s" %
-                                      traceback.format_exc())
-
-                # Else, send an error message to Whatsapp
-                else:
-                    self.send_message("An unknown error occured")
+                self.__handle_error(e)
 
     def process_loop_listeners(self):
         """
@@ -232,20 +222,7 @@ class WhatsappClient(object):
             # If there are any errors while running the function, handle the
             # exception
             except Exception as e:
-                # If the debug exception mode is turned on, send the exception
-                # to Whatsapp
-                if self.debug_exception == True:
-                    self.send_message("Error occured:\n %s" % e)
-
-                # Else, if the debug tracebac mode is turned on, send the
-                # traceback to Whatsapp
-                elif self.debug_traceback == True:
-                    self.send_message("Error occured:\n %s" %
-                                      traceback.format_exc())
-
-                # Else, send an error message to Whatsapp
-                else:
-                    self.send_message("An unknown error occured")
+                self.__handle_error(e)
 
     def send_message(self, message):
         """
@@ -407,10 +384,10 @@ class WhatsappClient(object):
 
             # Get the newest message, and if there isnt one, wait and try again
             new_message_object = self.get_last_message()
-            new_message = new_message_object.contents
-            if new_message is None:
+            if new_message_object is None:
                 time.sleep(0.5)
                 continue
+            new_message = new_message_object.contents
 
             # If the message isn't the last message, then return an answer
             if new_message != last_message:
