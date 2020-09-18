@@ -323,7 +323,6 @@ class WhatsappClient(object):
             new_message = messages[len(messages) - 1]
             new_message_text_element = new_message.find_element_by_css_selector(
                 ".selectable-text")
-            new_message_text = new_message_text_element.text
 
             new_message_text_emoji = self.browser.execute_script("""
                                             var new_message = arguments[0];
@@ -342,7 +341,7 @@ class WhatsappClient(object):
                                             return ret;
                                         """, new_message_text_element)
 
-            return new_message_text
+            return new_message_text_emoji
         except Exception:
             return None
 
