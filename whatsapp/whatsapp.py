@@ -320,7 +320,7 @@ class WhatsappClient(object):
                                             return ret;
                                         """, new_message_text_element)
 
-            return Message(sender, new_message_text_emoji)
+            return Message(sender, new_message_text_emoji, new_message)
         except Exception:
             return None
 

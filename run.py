@@ -9,6 +9,7 @@ from pytube import YouTube
 import os
 import importlib
 from gtts import gTTS
+import legofy
 
 #Define the responses for the !autosend command
 autosend_responses = {}
@@ -290,7 +291,7 @@ def yt_downloader(arguments):
     client.send_message("Done!")
     try:
         client.send_file(os.path.realpath("./%s") % vidstrm.default_filename, file_type="img")
-    except whatsapp.FileTooBigError:
+    except whatsapp.exceptions.FileTooBigError:
         client.send_message("File too big to be sended!")
     os.remove("./%s" % vidstrm.default_filename)
 
@@ -343,6 +344,21 @@ def speak_command(function, arguments):
 @client.command("splang", "Sets the language for the -SP command")
 def splang(arguments):
     language = arguments[0]
+
+@client.command("legofy", "Makes an image look like lego")
+def mes(args, message):
+    try:
+        message.get_image(client.browser)
+        legofy.main("./picture.png", "./result.png")
+        client.send_file(os.path.realpath("./result.png"), file_type="img")
+    except whatsapp.exceptions.NotAPictureMessage:
+        try:
+            time.sleep(1.5)
+            message.get_image(client.browser)
+            legofy.main("./picture.png", "./result.png")
+            client.send_file(os.path.realpath("./result.png"), file_type="img")
+        except whatsapp.exceptions.NotAPictureMessage:
+            return "Please send an image!"
 
 #Start the Whatsapp Client
 client.run()

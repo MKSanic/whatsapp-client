@@ -38,3 +38,8 @@ class ClientNotStartedError(Exception):
     def __init__(self):
         self.message = "The client isn't started yet"
         super().__init__(self.message)
+
+class NotAPictureMessage(Exception):
+    def __init__(self):
+        self.message = "The message isn't a picture"
+        super().__init__(self.message)
