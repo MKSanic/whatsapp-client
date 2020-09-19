@@ -21,13 +21,15 @@ client = whatsapp.WhatsappClient()
 
 #Define the !stop command
 
-@client.command("stop", "Stops the Whatsapp Bot")
-def stop(arguments):
+@client.command("stop", "Stops the Whatsapp Bot. Must be run by the owner")
+def stop(arguments, message_object):
 
     #Stop the Whatsapp Client and exit
-
-    client.stop()
-    exit()
+    if message_object.sender.person == whatsapp.persons.Self:
+        client.stop()
+        exit()
+    else:
+        return "This command must be run by the owner!"
 
 
 #Define the !calculate command

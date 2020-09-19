@@ -14,12 +14,13 @@ import selenium.common.exceptions
 import time
 import traceback
 import os
-from .exceptions import FileTooBigError, NoFileMessageError
+from .exceptions import FileTooBigError, ClientNotStartedError
 from .exceptions import UnknownFileTypeError, CommandNotFoundError
 from .exceptions import UnknownChatError
 from .message import Message
 from .persons import Self, Other, Person
 from webdriver_manager.chrome import ChromeDriverManager
+import inspect
 
 
 class WhatsappClient(object):
@@ -67,7 +68,7 @@ class WhatsappClient(object):
             if chat.text == chat_name:
                 chat.click()
                 return
-        raise UnknownChatError("Couldn't find chat %s" % chat_name)
+        raise UnknownChatError(chat_name)
 
     def command(self, name, help_message=None):
         """
@@ -75,8 +76,10 @@ class WhatsappClient(object):
         name = name of the command without the prefix, for example 'test'\n
         The prefix of a command is the command_prefix variable of this class\n
         help_message = the help message for the user. Default is None\n
-        Must be a function with 1 argument, the arguments the user gave\n
-        The string the function returns is the answer for the user.
+        Can be a function with 1 or 2 argument.\n
+        The first argument will be the a list of arguments the user gave\n
+        The second argument will be a message object\n
+        The string the function returns is the answer for the user.\n
         The function doesn't need to return something
         """
 
@@ -97,8 +100,7 @@ class WhatsappClient(object):
         try:
             self.commands.pop(name)
         except KeyError:
-            raise CommandNotFoundError(
-                "The specified command couldn't be found")
+            raise CommandNotFoundError()
 
     def on_message(self, on_message_function):
         """
@@ -152,7 +154,7 @@ class WhatsappClient(object):
 
         return add_command
 
-    def process_commands(self, function_name, arguments):
+    def process_commands(self, function_name, arguments, message_object):
         """
         Parses commands\n
         function_name = a function to execute for the command\n
@@ -160,30 +162,25 @@ class WhatsappClient(object):
         """
 
         try:
-            # If the first argument isn't -S, run the function
-            # return an answer if the answer is not None
-            if len(arguments) < 1:
-                answer = function_name(arguments)
-                # Send the answer if the function didn't return None
-                if answer is not None:
-                    self.send_message(answer)
-                return
-
             # If the first argument is in global_arguments,
             # run the given function to process the command
-            for global_argument in self.global_arguments:
-                if arguments[0] == global_argument:
-                    self.global_arguments[global_argument](function_name,
-                                                           arguments[1:])
-                    return
+            if len(arguments) > 0:
+                for global_argument in self.global_arguments:
+                    if arguments[0] == global_argument:
+                        self.global_arguments[global_argument](function_name,
+                                                               arguments[1:])
+                        return
 
-            # Else, run the function
-            # send an answer if the answer isn't None
-            else:
+            args = inspect.signature(function_name).parameters
+            if len(args) < 1:
+                answer = function_name()
+            elif len(args) == 1:
                 answer = function_name(arguments)
-                # Send the answer
-                if answer is not None:
-                    self.send_message(answer)
+            elif len(args) == 2:
+                answer = function_name(arguments, message_object)
+            # Send the answer
+            if answer is not None:
+                self.send_message(answer)
 
         # If there are any errors while running the function, handle the
         # exception
@@ -254,8 +251,7 @@ class WhatsappClient(object):
         # Make sure the file is under the limit of 64MB, else, raise an error
         file_size = os.path.getsize(file_path)
         if file_size > 64000000:
-            raise FileTooBigError(
-                "The file is over 64MB (file is %s bytes)" % file_size)
+            raise FileTooBigError(file_size)
 
         # Get the button for attach files and click it
         attach_file_button = self.browser.find_element_by_xpath(
@@ -270,8 +266,7 @@ class WhatsappClient(object):
             file_input = self.browser.find_element_by_xpath(
                 "/html/body/div[1]/div/div/div[4]/div/footer/div[1]/div[1]/div[2]/span/div/div/ul/li[1]/button/input")
         else:
-            raise UnknownFileTypeError(
-                "There was given an unknown file type to the send_file function")
+            raise UnknownFileTypeError()
 
         file_input.send_keys(file_path)
         file_is_sended = False
@@ -421,7 +416,7 @@ class WhatsappClient(object):
                         arguments = command_message.split()[1:]
 
                         # Send the result to the user
-                        self.process_commands(functionName, arguments)
+                        self.process_commands(functionName, arguments, new_message_object)
 
                         # Continue
                         break
