@@ -295,15 +295,10 @@ class WhatsappClient(object):
         # Get the newest message, and if there isnt one, return None
         try:
             new_message = messages[len(messages) - 1]
-            new_message_text_element = new_message.find_element_by_css_selector(
-                ".selectable-text")
-
-            if "message-out" in new_message.get_attribute("class"):
-                sender = Person(Self)
-            else:
-                sender = Person(Other)
-
-            new_message_text_emoji = self.browser.execute_script("""
+            try:
+                new_message_text_element = new_message.find_element_by_css_selector(
+                    ".selectable-text")
+                new_message_text_emoji = self.browser.execute_script("""
                                             var new_message = arguments[0];
                                             var text = new_message.firstChild;
                                             var child = text.firstChild;
@@ -319,6 +314,17 @@ class WhatsappClient(object):
                                             }
                                             return ret;
                                         """, new_message_text_element)
+            except selenium.common.exceptions.NoSuchElementException:
+                try:
+                    new_message.find_element_by_xpath("./div/div[1]/div/div/div[1]/div/div[2]/img")
+                    new_message_text_emoji = ""
+                except:
+                    return None
+
+            if "message-out" in new_message.get_attribute("class"):
+                sender = Person(Self)
+            else:
+                sender = Person(Other)
 
             return Message(sender, new_message_text_emoji, new_message)
         except Exception:
