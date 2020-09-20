@@ -397,7 +397,10 @@ class WhatsappClient(object):
 
                 # Check if the message starts with the command prefix and if it
                 # doesn't, continue
-                if new_message[0] != self.command_prefix:
+                try:
+                    if new_message[0] != self.command_prefix:
+                        continue
+                except IndexError:
                     continue
 
                 command_message = new_message[1:]
