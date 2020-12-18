@@ -21,7 +21,6 @@ This module can be used to:
 
 import time
 import os
-import inspect
 import typing
 import traceback
 import selenium.webdriver
@@ -33,7 +32,7 @@ import whatsapp.person
 
 
 class WhatsappClient:
-    """A Whatsapp client.
+    """This creates a Whatsapp client.
 
     This class can be used to:
         - set the chat the client sends messages to
@@ -153,7 +152,8 @@ class WhatsappClient:
         except KeyError as command_not_found:
             raise whatsapp.exceptions.CommandNotFoundError() from command_not_found
 
-    def on_message(self, on_message_function: typing.Callable[[whatsapp.message.Message], typing.Any]) -> typing.Callable:
+    def on_message(self, on_message_function: typing.Callable[[whatsapp.message.Message],
+                                                              typing.Any]) -> typing.Callable:
         """on_message decorator.
 
         The function will be run when the client receives a new message.
@@ -282,11 +282,10 @@ class WhatsappClient:
         """Gets the last message.
 
         Returns:
-            a whatsapp.message.Message object when the message has been found.
-            None when the client couldn't find any messages.
+            a whatsapp.message.Message object.
 
         Raises:
-            whatsapp.exceptions.CannotFindMessageError: raises when the client can't find any message
+            whatsapp.exceptions.CannotFindMessageError: raises when the client can't find any message.
         """
         # Retrieve all the messages.
         messages = self.__browser.find_elements_by_class_name(

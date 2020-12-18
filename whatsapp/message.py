@@ -15,8 +15,11 @@ class Message:
         - the contents of the message
 
     Attributes:
-        sender (person.PersonDict): the sender of the message
+        sender (whatsapp.person.PersonDict): the sender of the message
         contents (str): the contents of the message
+
+    Methods:
+        get_image: downloads the image attached to the message.
     """
 
     def __init__(self, sender: whatsapp.person.PersonDict, contents: str, selenium_object, browser) -> None:
@@ -26,7 +29,7 @@ class Message:
         self.__browser = browser
 
     def get_image(self) -> str:
-        """Downloads the image of a message and returns the image path in a string.
+        """Downloads the image attached to a message and returns the image path in a string.
 
         Returns:
             str: the path of the image that has been downloaded.

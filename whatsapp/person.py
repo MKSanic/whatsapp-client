@@ -5,7 +5,7 @@ import typing
 
 
 class PersonDict(typing.TypedDict):
-    """Person dict
+    """A whatsapp.person.PersonDict dict
 
     Keys:
         this_person (bool): if True, the person is the client.
