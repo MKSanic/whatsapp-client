@@ -9,3 +9,7 @@ When the client starts, you must scan the QR-Code and select a chat.
 ## Tutorial
 
 A full tutorial and documentation is available at the wiki.
+
+
+
+Headless support coming soon!
