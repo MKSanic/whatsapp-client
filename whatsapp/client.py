@@ -19,8 +19,11 @@ This module can be used to:
 #   |         |
 #   |         |
 
+# Please ignore the PyCharm comments.
+
 import time
 import os
+import functools
 import typing
 import traceback
 import selenium.webdriver
@@ -31,50 +34,78 @@ import whatsapp.message
 import whatsapp.person
 
 
+# noinspection PyArgumentList
 class WhatsappClient:
+    # noinspection PyUnresolvedReferences
     """This creates a Whatsapp client.
 
-    This class can be used to:
-        - set the chat the client sends messages to
-        - make commands for the bot to respond to
-        - remove commands
-        - run a function everytime a new message has been send or received
-        - run a function everytime the bot checks for new messages
-        - send text and files to the Whatsapp chat
-        - get the last message in the Whatsapp chat
-    The client has a build in help command.
-    This command can be removed by using the remove_command() method.
+        This class can be used to:
+            - set the chat the client sends messages to
+            - make commands for the bot to respond to
+            - remove commands
+            - run a function everytime a new message has been send or received
+            - run a function everytime the bot checks for new messages
+            - send text and files to the Whatsapp chat
+            - get the last message in the Whatsapp chat
+        The client has a build in help command.
+        This command can be removed by using the remove_command() method.
 
-    Attributes:
-        command_prefix (str): the prefix the user needs to add to the command.
-        debug_exception (bool): if True, when an error occurs the client will send the exception
-                                instead of the default error message.
-        debug_traceback (bool): if True, when an error occurs the client will send the traceback
-                               instead of the default error message.
-        disable_error_handling (bool): if True, no error handling happens,
-                                       which means Python will raise an error and the program will halt.
+        Attributes:
+            command_prefix (str): the prefix the user needs to add to the command.
+            debug_exception (bool): if True, when an error occurs the client will send the exception
+                                    instead of the default error message.
+            debug_traceback (bool): if True, when an error occurs the client will send the traceback
+                                   instead of the default error message.
+            disable_error_handling (bool): if True, no error handling happens,
+                                           which means Python will raise an error and the program will halt.
 
-    Methods:
-        set_chat: set the chat the client is on.
-        remove_command: remove a command from the client.
-        send_message: send a message to the chat the client is on.
-        send_file: send a file to the chat the client is on.
-        get_last_message: get the last message from the chat the client is on.
-        run: run the client.
-    """
+        Methods:
+            set_chat: set the chat the client is on.
+            remove_command: remove a command from the client.
+            send_message: send a message to the chat the client is on.
+            send_file: send a file to the chat the client is on.
+            get_last_message: get the last message from the chat the client is on.
+            run: run the client.
+        """
 
     def __init__(self) -> None:
         self.__running = False
         self.__commands = {"help": [self.__help_menu, "Returns help messages"]}
         self.__on_messages = []
         self.__on_loops = []
-        self.command_prefix = "!"
+        self.__command_prefix = "!"
         self.debug_exception = False
         self.debug_traceback = False
         self.disable_error_handling = False
         self.__browser = None
         self.__send_input = None
 
+    @property
+    def command_prefix(self):
+        return self.__command_prefix
+
+    @command_prefix.setter
+    def command_prefix(self, prefix: str):
+        if not isinstance(prefix, str):
+            raise whatsapp.exceptions.InvalidPrefixError()
+        elif len(prefix) != 1:
+            raise whatsapp.exceptions.InvalidPrefixError()
+        elif not prefix.isascii():
+            raise whatsapp.exceptions.InvalidPrefixError()
+        else:
+            self.__command_prefix = prefix
+
+    # noinspection PyMethodParameters
+    def __needs_client_running(function: typing.Callable):
+        @functools.wraps(function)
+        def wrapper(self, *args, **kwargs):
+            if self.__running:
+                return function(self, *args, **kwargs)
+            else:
+                raise whatsapp.exceptions.ClientNotStartedError
+        return wrapper
+
+    @__needs_client_running
     def __handle_error(self, exception: Exception) -> None:
         """Handle an error.
         This method sends a nice error message to the user when an error occurs.
@@ -97,6 +128,7 @@ class WhatsappClient:
         else:
             self.send_message("An unknown error occurred")
 
+    @__needs_client_running
     def set_chat(self, chat_name: str) -> None:
         """Sets the chat the bot is on.
 
@@ -111,6 +143,10 @@ class WhatsappClient:
         for chat in chats:
             if chat.text == chat_name:
                 chat.click()
+                time.sleep(5)
+                # Reset the __send_input variable to prevent bugs.
+                self.__send_input = self.__browser.find_element_by_xpath(
+                    "/html/body/div[1]/div/div/div[4]/div/footer/div[1]/div[2]/div/div[2]")
                 return
         raise whatsapp.exceptions.UnknownChatError(chat_name)
 
@@ -179,6 +215,7 @@ class WhatsappClient:
 
         return run_on_message
 
+    @__needs_client_running
     def __process_commands(self, function, arguments: list, message_object: whatsapp.message.Message) -> None:
         """Processes a command.
 
@@ -195,6 +232,7 @@ class WhatsappClient:
         except Exception as error:
             self.__handle_error(error)
 
+    @__needs_client_running
     def __process_message_listeners(self, msg_object: whatsapp.message.Message) -> None:
         """Processes the message listeners.
 
@@ -208,6 +246,7 @@ class WhatsappClient:
             except Exception as error:
                 self.__handle_error(error)
 
+    @__needs_client_running
     def __process_loop_listeners(self) -> None:
         """Processes the loop listeners.
         """
@@ -218,6 +257,7 @@ class WhatsappClient:
             except Exception as error:
                 self.__handle_error(error)
 
+    @__needs_client_running
     def send_message(self, msg: str):
         """Sends a message to the chat the client is on.
 
@@ -231,6 +271,7 @@ class WhatsappClient:
             except selenium.common.exceptions.StaleElementReferenceException:
                 pass
 
+    @__needs_client_running
     def send_file(self, file_path: str, file_type="other") -> None:
         """Sends a file to the chat the client is on.
 
@@ -278,6 +319,7 @@ class WhatsappClient:
                 time.sleep(0.5)
                 continue
 
+    @__needs_client_running
     def get_last_message(self) -> whatsapp.message.Message:
         """Gets the last message.
 
@@ -330,6 +372,8 @@ class WhatsappClient:
 
         return whatsapp.message.Message(sender, new_message_text, new_message, self.__browser)
 
+    # noinspection PyUnusedLocal
+    @__needs_client_running
     def __help_menu(self, arguments: list, message_obj: whatsapp.message.Message) -> None:
         if len(arguments) == 0:
 
@@ -365,6 +409,7 @@ class WhatsappClient:
 
         while self.__running:
 
+            # Reset the __send_input variable to prevent bugs.
             try:
                 self.__send_input = self.__browser.find_element_by_xpath(
                     "/html/body/div[1]/div/div/div[4]/div/footer/div[1]/div[2]/div/div[2]")
@@ -413,6 +458,7 @@ class WhatsappClient:
                         self.__process_commands(function_name, arguments, new_message_object)
                         break
 
+    @__needs_client_running
     def stop(self):
         """Stops the Whatsapp Client
         """
