@@ -11,5 +11,7 @@ When the client starts, you must scan the QR-Code and select a chat.
 A full tutorial and documentation is available at the wiki.
 
 
+Full headless support coming soon!
 
-Headless support coming soon!
+
+This code has a 9.48/10 rating.
