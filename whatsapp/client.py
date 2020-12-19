@@ -375,7 +375,7 @@ class WhatsappClient:
         try:
             new_message = messages[-1]
         except IndexError as message_not_found:
-            raise whatsapp.exceptions.CannotFindMessageError() from message_not_found
+            raise whatsapp.exceptions.CantFindMessageError() from message_not_found
         try:
             # Retrieve the text in the message.
             new_message_text_element = new_message.find_element_by_css_selector(
@@ -402,17 +402,23 @@ class WhatsappClient:
                 # The message could possibly be an image. If so, retrieve the image and set the message text to "".
                 new_message.find_element_by_xpath("./div/div[1]/div/div/div[1]/div/div[2]/img")
                 new_message_text = ""
-            except selenium.common.exceptions.NoSuchElementException:
+            except (selenium.common.exceptions.NoSuchElementException,
+                    selenium.common.exceptions.StaleElementReferenceException):
                 try:
                     # Sometimes the image is on a different xpath
                     new_message.find_element_by_xpath("./div/div[1]/div/div/div[2]/div[1]/div[4]/img")
                     new_message_text = ""
-                except selenium.common.exceptions.NoSuchElementException as msg_not_found:
-                    raise whatsapp.exceptions.CannotFindMessageError() from msg_not_found
+                except (selenium.common.exceptions.NoSuchElementException,
+                        selenium.common.exceptions.StaleElementReferenceException) as msg_not_found:
+                    raise whatsapp.exceptions.CantFindMessageError() from msg_not_found
+
+        except selenium.common.exceptions.StaleElementReferenceException as msg_not_found:
+            raise whatsapp.exceptions.CantFindMessageError() from msg_not_found
 
         if "message-out" in new_message.get_attribute("class"):
             sender: whatsapp.person.PersonDict = {
-                "this_person": True
+                "this_person": True,
+                "person": None
             }
         else:
             sender: whatsapp.person.PersonDict = {
@@ -532,7 +538,7 @@ class WhatsappClient:
 
             try:
                 new_message_object = self.get_last_message()
-            except whatsapp.exceptions.CannotFindMessageError:
+            except whatsapp.exceptions.CantFindMessageError:
                 continue
 
             if new_message_object is None:
