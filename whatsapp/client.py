@@ -362,6 +362,15 @@ class WhatsappClient:
         # Retrieve all the messages.
         messages = self.__browser.find_elements_by_class_name(
             "focusable-list-item")
+
+        # Check for the chat name. If it couldn't be found, chat name = None
+        try:
+            chat_element = self.__browser.find_element_by_xpath(
+                "/html/body/div[1]/div/div/div[4]/div/header/div[2]/div["
+                "1]/div/span")
+            chat_name = chat_element.text
+        except selenium.common.exceptions.NoSuchElementException:
+            chat_name = None
         # Select the newest message.
         try:
             new_message = messages[-1]
@@ -393,14 +402,30 @@ class WhatsappClient:
                 # The message could possibly be an image. If so, retrieve the image and set the message text to "".
                 new_message.find_element_by_xpath("./div/div[1]/div/div/div[1]/div/div[2]/img")
                 new_message_text = ""
-            except selenium.common.exceptions.NoSuchElementException as message_not_found:
-                raise whatsapp.exceptions.CannotFindMessageError() from message_not_found
+            except selenium.common.exceptions.NoSuchElementException:
+                try:
+                    # Sometimes the image is on a different xpath
+                    new_message.find_element_by_xpath("./div/div[1]/div/div/div[2]/div[1]/div[4]/img")
+                    new_message_text = ""
+                except selenium.common.exceptions.NoSuchElementException as msg_not_found:
+                    raise whatsapp.exceptions.CannotFindMessageError() from msg_not_found
 
-        sender: whatsapp.person.PersonDict = {
-            "this_person": "message-out" in new_message.get_attribute("class")
-        }
+        if "message-out" in new_message.get_attribute("class"):
+            sender: whatsapp.person.PersonDict = {
+                "this_person": True
+            }
+        else:
+            sender: whatsapp.person.PersonDict = {
+                "this_person": False
+            }
+            try:
+                person_element = new_message.find_element_by_xpath("./div/div/div/div[1]/span")
+                person = person_element.text
+            except selenium.common.exceptions.NoSuchElementException:
+                person = None
+            sender["person"] = person
 
-        return whatsapp.message.Message(sender, new_message_text, new_message, self.__browser)
+        return whatsapp.message.Message(sender, new_message_text, new_message, self.__browser, chat_name)
 
     # noinspection PyUnusedLocal
     @__needs_client_running
@@ -507,7 +532,6 @@ class WhatsappClient:
 
             try:
                 new_message_object = self.get_last_message()
-                self.__process_message_listeners(new_message_object)
             except whatsapp.exceptions.CannotFindMessageError:
                 continue
 
@@ -518,6 +542,7 @@ class WhatsappClient:
 
             if new_message != last_message:
                 last_message = new_message
+                self.__process_message_listeners(new_message_object)
 
                 try:
                     if new_message[0] != self.command_prefix:

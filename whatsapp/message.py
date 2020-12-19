@@ -17,14 +17,17 @@ class Message:
     Attributes:
         sender (whatsapp.person.PersonDict): the sender of the message
         contents (str): the contents of the message
+        chat_name (str): the name of the chat. None when it couldn't be found.
 
     Methods:
         get_image: downloads the image attached to the message.
     """
 
-    def __init__(self, sender: whatsapp.person.PersonDict, contents: str, selenium_object, browser) -> None:
+    def __init__(self, sender: whatsapp.person.PersonDict, contents: str, selenium_object,
+                 browser, chat_name: str) -> None:
         self.sender = sender
         self.contents = contents
+        self.chat_name = chat_name
         self.__selenium_object = selenium_object
         self.__browser = browser
 
