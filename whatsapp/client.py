@@ -26,7 +26,9 @@ import os
 import functools
 import typing
 import traceback
+import PIL.Image
 import selenium.webdriver
+import selenium.webdriver.chrome.options
 import selenium.common
 import webdriver_manager.chrome
 import whatsapp.exceptions
@@ -71,6 +73,7 @@ class WhatsappClient:
     def __init__(self) -> None:
         self.__running = False
         self.__commands = {"help": [self.__help_menu, "Returns help messages"]}
+        self.__on_ready = []
         self.__on_messages = []
         self.__on_loops = []
         self.__command_prefix = "!"
@@ -79,13 +82,20 @@ class WhatsappClient:
         self.disable_error_handling = False
         self.__browser = None
         self.__send_input = None
+        self.__user_data_dir = f"{os.path.dirname(os.path.realpath(__file__))}/whatsapp_data"
+        if not os.path.isdir(self.__user_data_dir):
+            os.mkdir(self.__user_data_dir)
 
     @property
     def command_prefix(self):
+        """Command prefix property.
+        """
         return self.__command_prefix
 
     @command_prefix.setter
     def command_prefix(self, prefix: str):
+        """Command prefix setter.
+        """
         if not isinstance(prefix, str):
             raise whatsapp.exceptions.InvalidPrefixError()
         elif len(prefix) != 1:
@@ -103,6 +113,7 @@ class WhatsappClient:
                 return function(self, *args, **kwargs)
             else:
                 raise whatsapp.exceptions.ClientNotStartedError
+
         return wrapper
 
     @__needs_client_running
@@ -203,6 +214,19 @@ class WhatsappClient:
 
         return run_on_message
 
+    def on_ready(self, on_ready_function: typing.Callable[[], typing.Any]) -> typing.Callable:
+
+        """on_ready decorator
+        .
+        The function will be run when the client is ready.
+        """
+        self.__on_ready.append(on_ready_function)
+
+        def run_on_ready():
+            on_ready_function()
+
+        return run_on_ready
+
     def on_loop(self, on_loop_function: typing.Callable[[], typing.Any]) -> typing.Callable:
         """on_loop decorator.
 
@@ -256,6 +280,12 @@ class WhatsappClient:
                 listener()
             except Exception as error:
                 self.__handle_error(error)
+
+    @__needs_client_running
+    def __run_ready_functions(self) -> None:
+        """Runs the on ready functions."""
+        for function in self.__on_ready:
+            function()
 
     @__needs_client_running
     def send_message(self, msg: str):
@@ -376,7 +406,6 @@ class WhatsappClient:
     @__needs_client_running
     def __help_menu(self, arguments: list, message_obj: whatsapp.message.Message) -> None:
         if len(arguments) == 0:
-
             answer = "List of commands:\n"
             for command in self.__commands:
                 answer = answer + f"{command.replace(self.command_prefix, '')}, "
@@ -387,25 +416,82 @@ class WhatsappClient:
             for command in self.__commands:
                 if arguments[0] == command.replace(self.command_prefix, ""):
                     answer = self.__commands[command][1]
-
                     self.send_message(answer)
                     return
 
         self.send_message("Command not found!")
 
-    def run(self) -> None:
+    def run(self, headless: bool = False) -> None:
         """Starts the client.
+
+        Args: headless (bool): if True, the program will show the QR-code in a picture viewer.
+                               This doesn't start Chrome in headless mode yet because of bugs.
 
         Raises:
             whatsapp.exceptions.InvalidPrefixError: when an invalid prefix has been set.
         """
 
         self.__running = True
-        self.__browser = selenium.webdriver.Chrome(webdriver_manager.chrome.ChromeDriverManager().install())
+
+        options = selenium.webdriver.chrome.options.Options()
+        options.add_argument(f"user-data-dir={self.__user_data_dir}")
+
+        self.__browser = selenium.webdriver.Chrome(webdriver_manager.chrome.ChromeDriverManager().install(),
+                                                   chrome_options=options)
 
         self.__browser.get("https://web.whatsapp.com/")
 
+        # Find the QR-code element if the headless argument is True. If Whatsapp is already logged in,
+        # skip this process.
+        if headless:
+            qr_code_found = False
+            qr_code_element = None
+            while True:
+                try:
+                    self.__browser.find_element_by_id("pane-side").find_elements_by_tag_name("span")
+                    break
+                except selenium.common.exceptions.NoSuchElementException:
+                    try:
+                        qr_code_element = self.__browser.find_element_by_xpath(
+                            "/html/body/div[1]/div/div/div[2]/div[1]/div/div["
+                            "2]/div/canvas")
+                        qr_code_found = True
+                        break
+                    except selenium.common.exceptions.NoSuchElementException:
+                        time.sleep(1)
+                        continue
+            if qr_code_found:
+                qr_code_size = qr_code_element.size
+                qr_code_loc = qr_code_element.location
+                self.__browser.save_screenshot("qr.png")
+                pos_x = qr_code_loc["x"]
+                pos_y = qr_code_loc["y"]
+                width = pos_x + qr_code_size["width"]
+                height = pos_y + qr_code_size["height"]
+                img = PIL.Image.open("qr.png")
+                img = img.crop((int(pos_x), int(pos_y), int(width), int(height)))
+                img.save("qr.png")
+                img.show()
+                while True:
+                    try:
+                        self.__browser.find_element_by_xpath("/html/body/div[1]/div/div/div[2]/div[1]/div/div["
+                                                             "2]/div/canvas")
+                    except selenium.common.exceptions.NoSuchElementException:
+                        img.close()
+                        break
+
         last_message = ""
+
+        # Wait for Whatsapp to become ready to use.
+        while True:
+            try:
+                self.__browser.find_element_by_id("pane-side").find_elements_by_tag_name("span")
+                break
+            except selenium.common.exceptions.NoSuchElementException:
+                time.sleep(1)
+                continue
+
+        self.__run_ready_functions()
 
         while self.__running:
 
@@ -459,11 +545,10 @@ class WhatsappClient:
                         break
 
     @__needs_client_running
-    def stop(self):
-        """Stops the Whatsapp Client
+    def log_out(self) -> None:
+        """Logs out of Whatsapp.
+        After this being called, the function will automatically call whatsapp.client.WhatsappClient.stop().
         """
-        self.__running = False
-
         # Retrieve the settings button and click it.
         self.__browser.find_element_by_xpath(
             "/html/body/div[1]/div/div/div[3]/div/header/div[2]/div/span/div[3]/div").click()
@@ -473,10 +558,18 @@ class WhatsappClient:
         self.__browser.find_element_by_xpath(
             "/html/body/div[1]/div/div/div[3]/div/header/div[2]/div/span/div[3]/span/div/ul/li[7]").click()
         time.sleep(1)
-        # If there is a warning pop up, click yes.
+        # If there is a warning pop up, click confirm.
         try:
             self.__browser.find_element_by_xpath(
                 "/html/body/div[1]/div/span[2]/div/div/div/div/div/div/div[3]/div[2]").click()
         except selenium.common.exceptions.NoSuchElementException:
             pass
+        self.stop()
+
+    @__needs_client_running
+    def stop(self) -> None:
+        """Stops the Whatsapp Client (Doesn't log out).
+        """
+        self.__running = False
+
         self.__browser.quit()
