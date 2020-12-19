@@ -1,12 +1,12 @@
 """This module is used to contain info about a Whatsapp message.
 """
 
+import time
 import selenium.common.exceptions
 import selenium.webdriver.common.action_chains
 import PIL
 import whatsapp.exceptions
 import whatsapp.person
-import time
 
 
 class Message:
@@ -91,8 +91,8 @@ class Message:
         except selenium.common.exceptions.NoSuchElementException:
             try:
                 self.__selenium_object.find_element_by_xpath("./div/div/span/div/div").click()
-            except selenium.common.exceptions.NoSuchElementException:
-                raise whatsapp.exceptions.CantSetReplyError()
+            except selenium.common.exceptions.NoSuchElementException as cant_set_reply:
+                raise whatsapp.exceptions.CantSetReplyError() from cant_set_reply
         time.sleep(1)
         # Click the reply button.
         reply = self.__browser.find_element_by_xpath("/html/body/div[1]/div/span[4]/div/ul/li[2]")
@@ -118,8 +118,8 @@ class Message:
         except selenium.common.exceptions.NoSuchElementException:
             try:
                 self.__selenium_object.find_element_by_xpath("./div/div/span/div/div").click()
-            except selenium.common.exceptions.NoSuchElementException:
-                raise whatsapp.exceptions.CantRemoveMessageError()
+            except selenium.common.exceptions.NoSuchElementException as cant_remove_message:
+                raise whatsapp.exceptions.CantRemoveMessageError() from cant_remove_message
 
         time.sleep(0.5)
         # Click the remove button and then click remove for everyone.
@@ -130,8 +130,8 @@ class Message:
                                                                            "2]/div/span/div/div/div/div/div/div["
                                                                            "3]/div/div[3]")
             remove_for_everyone_btn.click()
-        except selenium.common.exceptions.NoSuchElementException:
-            raise whatsapp.exceptions.CantRemoveMessageError()
+        except selenium.common.exceptions.NoSuchElementException as cant_remove_message:
+            raise whatsapp.exceptions.CantRemoveMessageError() from cant_remove_message
 
         time.sleep(0.5)
         # If a pop-up comes up, ignore it.
