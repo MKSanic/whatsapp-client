@@ -14,4 +14,4 @@ A full tutorial and documentation is available at the wiki.
 Full headless support coming soon!
 
 
-This code has a 9.48/10 rating.
+This code has a 9.57/10 rating.
