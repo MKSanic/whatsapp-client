@@ -23,9 +23,10 @@ This module can be used to:
 
 import time
 import os
+import logging
+import sys
 import functools
 import typing
-import traceback
 import PIL.Image
 import selenium.webdriver
 import selenium.webdriver.chrome.options
@@ -54,13 +55,15 @@ class WhatsappClient:
         This command can be removed by using the remove_command() method.
 
         Attributes:
-            command_prefix (str): the prefix the user needs to add to the command.
-            debug_exception (bool): if True, when an error occurs the client will send the exception
-                                    instead of the default error message.
-            debug_traceback (bool): if True, when an error occurs the client will send the traceback
-                                   instead of the default error message.
-            disable_error_handling (bool): if True, no error handling happens,
-                                           which means Python will raise an error and the program will halt.
+            command_prefix (str): the prefix the user needs to add to the command. Default "!".
+            logging (bool): if True, the client will log information. Default False.
+            log_level (int): the level of logging:
+                             0: the client only logs errors.
+                             1: the client logs errors and info.
+                             2: the client logs errors, info and debug info.
+                             When the level is not one of these, no logging occurs. Default 0.
+            descriptive_error_message (bool): when True, when an exception occurs there will be sent a descriptive error
+                                              message to the user. Default False.
 
         Methods:
             set_chat: set the chat the client is on.
@@ -78,9 +81,9 @@ class WhatsappClient:
         self.__on_messages = []
         self.__on_loops = []
         self.__command_prefix = "!"
-        self.debug_exception = False
-        self.debug_traceback = False
-        self.disable_error_handling = False
+        self.logging = False
+        self.log_level = 0
+        self.descriptive_error_message = False
         self.__browser = None
         self.__send_input = None
         self.__user_data_dir = f"{os.path.dirname(os.path.realpath(__file__))}/whatsapp_data"
@@ -117,28 +120,27 @@ class WhatsappClient:
 
         return wrapper
 
-    @__needs_client_running
-    def __handle_error(self, exception: Exception) -> None:
-        """Handle an error.
+    # noinspection PyMethodParameters
+    def __automatic_error_handling(function: typing.Callable):
+        """Handle an error when it occurs while executing the function.
         This method sends a nice error message to the user when an error occurs.
-
-        Args:
-            exception (Exception): the error that occurred.
+        You can set the behaviour of this error handler with the debug attribute of this class.
 
         Raises:
             the given exception when error handling is disabled.
         """
+        @functools.wraps(function)
+        def wrapper(self, *args, **kwargs):
+            try:
+                function(self, *args, **kwargs)
+            except Exception as error:
+                exception, exc_obj, traceback = sys.exc_info()
+                if self.descriptive_error_message:
+                    self.send_message(f"An error occurred: {str(error)}")
+                if self.logging:
+                    logging.error(f"{exception}, {str(exc_obj)}.")
 
-        if self.disable_error_handling:
-            self.stop()
-            raise exception
-
-        if self.debug_exception:
-            self.send_message(f"Error occurred:\n {exception}")
-        elif self.debug_traceback:
-            self.send_message(f"Error occurred:\n {traceback.format_exc()}")
-        else:
-            self.send_message("An unknown error occurred")
+        return wrapper
 
     @__needs_client_running
     def set_chat(self, chat_name: typing.Union[str, whatsapp.group.Group, whatsapp.person.PersonDict]) -> None:
@@ -249,6 +251,7 @@ class WhatsappClient:
 
         return run_on_message
 
+    @__automatic_error_handling
     @__needs_client_running
     def __process_commands(self, function, arguments: list, message_object: whatsapp.message.Message) -> None:
         """Processes a command.
@@ -258,14 +261,9 @@ class WhatsappClient:
             arguments (list): the arguments the user gave.
             message_object (whatsapp.message.Message): the message object.
         """
-        try:
-            function(arguments, message_object)
-        except TypeError:
-            self.send_message("An error occurred while executing the command. Perhaps the function doesn't take 2 "
-                              "arguments?")
-        except Exception as error:
-            self.__handle_error(error)
+        function(arguments, message_object)
 
+    @__automatic_error_handling
     @__needs_client_running
     def __process_message_listeners(self, msg_object: whatsapp.message.Message) -> None:
         """Processes the message listeners.
@@ -275,22 +273,18 @@ class WhatsappClient:
         """
         on_message_listeners = self.__on_messages
         for listener in on_message_listeners:
-            try:
-                listener(msg_object)
-            except Exception as error:
-                self.__handle_error(error)
+            listener(msg_object)
 
+    @__automatic_error_handling
     @__needs_client_running
     def __process_loop_listeners(self) -> None:
         """Processes the loop listeners.
         """
         on_loop_listeners = self.__on_loops
         for listener in on_loop_listeners:
-            try:
-                listener()
-            except Exception as error:
-                self.__handle_error(error)
+            listener()
 
+    @__automatic_error_handling
     @__needs_client_running
     def __run_ready_functions(self) -> None:
         """Runs the on ready functions."""
