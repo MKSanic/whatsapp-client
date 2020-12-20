@@ -34,6 +34,7 @@ import webdriver_manager.chrome
 import whatsapp.exceptions
 import whatsapp.message
 import whatsapp.person
+import whatsapp.group
 
 
 # noinspection PyArgumentList
@@ -371,6 +372,16 @@ class WhatsappClient:
             chat_name = chat_element.text
         except selenium.common.exceptions.NoSuchElementException:
             chat_name = None
+        # Check if the chat is a group. If a Selenium error occurs, user = None.
+        try:
+            chat_img = self.__browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/header/div["
+                                                            "1]/div/div/span")
+            if chat_img.get_attribute("data-icon") == "default-user":
+                user = True
+            else:
+                user = False
+        except selenium.common.exceptions.NoSuchElementException:
+            user = None
         # Select the newest message.
         try:
             new_message = messages[-1]
@@ -415,23 +426,35 @@ class WhatsappClient:
         except selenium.common.exceptions.StaleElementReferenceException as msg_not_found:
             raise whatsapp.exceptions.CantFindMessageError() from msg_not_found
 
-        if "message-out" in new_message.get_attribute("class"):
-            sender: whatsapp.person.PersonDict = {
-                "this_person": True,
-                "person": None
-            }
+        group = None
+        if user:
+            if "message-out" in new_message.get_attribute("class"):
+                sender: whatsapp.person.PersonDict = {
+                    "this_person": True,
+                    "person": None
+                }
+            else:
+                sender: whatsapp.person.PersonDict = {
+                    "this_person": False,
+                    "person": chat_name
+                }
         else:
             sender: whatsapp.person.PersonDict = {
                 "this_person": False
             }
-            try:
-                person_element = new_message.find_element_by_xpath("./div/div/div/div[1]/span")
-                person = person_element.text
-            except selenium.common.exceptions.NoSuchElementException:
+            if "message-out" not in new_message.get_attribute("class"):
+                try:
+                    person_element = new_message.find_element_by_xpath("./div/div/div/div[1]/span")
+                    person = person_element.text
+                except selenium.common.exceptions.NoSuchElementException:
+                    person = None
+            else:
+                sender["this_person"] = True
                 person = None
             sender["person"] = person
+            group = whatsapp.group.Group(chat_name, self.__browser)
 
-        return whatsapp.message.Message(sender, new_message_text, new_message, self.__browser, chat_name)
+        return whatsapp.message.Message(sender, new_message_text, new_message, self.__browser, group)
 
     # noinspection PyUnusedLocal
     @__needs_client_running

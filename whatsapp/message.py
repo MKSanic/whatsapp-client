@@ -4,9 +4,11 @@
 import time
 import selenium.common.exceptions
 import selenium.webdriver.common.action_chains
+import selenium.webdriver
 import PIL
 import whatsapp.exceptions
 import whatsapp.person
+import whatsapp.group
 
 
 class Message:
@@ -17,9 +19,11 @@ class Message:
         - the contents of the message
 
     Attributes:
-        sender (whatsapp.person.PersonDict): the sender of the message
+        sender (whatsapp.person.PersonDict): a whatsapp.person.PersonDict object containing info about the sender of the
+                                             message.
         contents (str): the contents of the message
-        chat_name (str): the name of the chat. None when it couldn't be found.
+        group (whatsapp.group.Group): a whatsapp.group.Group object containing info about the group of the message.
+                                      None when not a group.
 
     Methods:
         get_image: downloads the image attached to the message.
@@ -28,10 +32,10 @@ class Message:
     """
 
     def __init__(self, sender: whatsapp.person.PersonDict, contents: str, selenium_object,
-                 browser, chat_name: str) -> None:
+                 browser: selenium.webdriver.Chrome, group: whatsapp.group.Group = None) -> None:
         self.sender = sender
         self.contents = contents
-        self.chat_name = chat_name
+        self.group = group
         self.__selenium_object = selenium_object
         self.__browser = browser
 
@@ -73,53 +77,53 @@ class Message:
         except selenium.common.exceptions.NoSuchElementException as picture_not_found_error:
             raise whatsapp.exceptions.NotAPictureMessageError() from picture_not_found_error
 
-    def set_reply(self):
+    def __hover_over(self) -> None:
+        """Hovers over the message to show the arrow button for the message menu.
+        """
+        # Hover over the message to show the arrow button for the message menu.
+        hover = selenium.webdriver.common.action_chains.ActionChains(
+            self.__browser).move_to_element(self.__selenium_object.find_element_by_xpath("./div/div"))
+        hover.perform()
+
+    def __click_arrow_button(self) -> None:
+        """Hovers over the message to show the arrow button and then clicks it.
+        """
+        self.__hover_over()
+        # Click the arrow button. It can have multiple paths, so try them both.
+        try:
+            self.__selenium_object.find_element_by_xpath("./div/div/span[2]/div/div").click()
+        except selenium.common.exceptions.NoSuchElementException:
+            self.__selenium_object.find_element_by_xpath("./div/div/span/div/div").click()
+
+    def set_reply(self) -> None:
         # The sleeps are to prevent bugs.
         """Sets the reply for the next message to this message.
 
         Raises:
             whatsapp.exceptions.CantSetReplyError: when an error in Selenium occurs.
         """
-        # Hover over the message to show the arrow button for the message menu.
-        hover = selenium.webdriver.common.action_chains.ActionChains(
-            self.__browser).move_to_element(self.__selenium_object.find_element_by_css_selector(".copyable-text"))
-        hover.perform()
-        time.sleep(1)
-        # Click the arrow button. It can have multiple paths, so try them both.
         try:
-            self.__selenium_object.find_element_by_xpath("./div/div/span[2]/div/div").click()
-        except selenium.common.exceptions.NoSuchElementException:
-            try:
-                self.__selenium_object.find_element_by_xpath("./div/div/span/div/div").click()
-            except selenium.common.exceptions.NoSuchElementException as cant_set_reply:
-                raise whatsapp.exceptions.CantSetReplyError() from cant_set_reply
+            self.__click_arrow_button()
+        except selenium.common.exceptions.NoSuchElementException as cant_set_reply:
+            raise whatsapp.exceptions.CantSetReplyError() from cant_set_reply
         time.sleep(1)
         # Click the reply button.
         reply = self.__browser.find_element_by_xpath("/html/body/div[1]/div/span[4]/div/ul/li[2]")
         reply.click()
 
-    def remove(self):
+    def remove(self) -> None:
         """Removes the message.
 
         Raises:
             whatsapp.exceptions.CantRemoveMessageError: when the message can't be removed.
         """
         if not self.sender["this_person"]:
-            raise whatsapp.exceptions.CantRemoveMessageError()
+            raise whatsapp.exceptions.CantRemoveMessageError(owns_message=False)
         # The sleeps are to prevent bugs.
-        # Hover over the message to show the arrow button for the message menu.
-        hover = selenium.webdriver.common.action_chains.ActionChains(
-            self.__browser).move_to_element(self.__selenium_object.find_element_by_css_selector(".copyable-text"))
-        hover.perform()
-        time.sleep(0.5)
-        # Click the arrow button. It can have multiple paths, so try them both.
         try:
-            self.__selenium_object.find_element_by_xpath("./div/div/span[2]/div/div").click()
-        except selenium.common.exceptions.NoSuchElementException:
-            try:
-                self.__selenium_object.find_element_by_xpath("./div/div/span/div/div").click()
-            except selenium.common.exceptions.NoSuchElementException as cant_remove_message:
-                raise whatsapp.exceptions.CantRemoveMessageError() from cant_remove_message
+            self.__click_arrow_button()
+        except selenium.common.exceptions.NoSuchElementException as cant_remove_message:
+            raise whatsapp.exceptions.CantRemoveMessageError() from cant_remove_message
 
         time.sleep(0.5)
         # Click the remove button and then click remove for everyone.
@@ -140,4 +144,13 @@ class Message:
                                                  "2]/div[2]").click()
         except selenium.common.exceptions.NoSuchElementException:
             pass
-        time.sleep(1)
+        time.sleep(2)
+        # Remove the message for this person to make it gone entirely.
+        self.__click_arrow_button()
+        time.sleep(0.5)
+        try:
+            self.__browser.find_element_by_xpath("/html/body/div[1]/div/span[4]/div/ul/li").click()
+            self.__browser.find_element_by_xpath("/html/body/div[1]/div/span[2]/div/span/div/div/div/div/div/div["
+                                                 "3]/div[2]").click()
+        except selenium.common.exceptions.NoSuchElementException:
+            return
