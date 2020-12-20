@@ -74,15 +74,6 @@ class CantFindMessageError(Exception):
         super().__init__(self.message)
 
 
-class CantSetReplyError(Exception):
-    """Raises when the client can't set a reply on a message.
-    """
-
-    def __init__(self):
-        self.message = "Selenium couldn't find the reply button."
-        super().__init__(self.message)
-
-
 class CantRemoveMessageError(Exception):
     """Raises when the client can't remove a message.
 

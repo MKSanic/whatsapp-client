@@ -9,6 +9,8 @@ import whatsapp.exceptions
 class Group:
     """Used to control groups.
 
+    This is going to be extended more later.
+
     Attributes:
         group_name (str): the name of the group.
 

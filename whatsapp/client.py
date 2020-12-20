@@ -141,15 +141,24 @@ class WhatsappClient:
             self.send_message("An unknown error occurred")
 
     @__needs_client_running
-    def set_chat(self, chat_name: str) -> None:
+    def set_chat(self, chat_name: typing.Union[str, whatsapp.group.Group, whatsapp.person.PersonDict]) -> None:
         """Sets the chat the bot is on.
 
         Args:
-            chat_name (str): the name of the chat.
+            chat_name (typing.Union[str, whatsapp.group.Group, whatsapp.person.PersonDict[): the name of the chat.
+                                                                                             Can be a string,
+                                                                                             a whatsapp.group.Group
+                                                                                             object or a
+                                                                                             whatsapp.person.PersonDict
+                                                                                             dict.
 
         Raises:
             whatsapp.exceptions.UnknownChatError: raises when the chat is not found.
         """
+        if isinstance(chat_name, whatsapp.group.Group):
+            chat_name = chat_name.group_name
+        elif isinstance(chat_name, whatsapp.person.PersonDict):
+            chat_name = chat_name["person"]
         # Retrieve all the chats from the sidebar.
         chats = self.__browser.find_element_by_id("pane-side").find_elements_by_tag_name("span")
         for chat in chats:

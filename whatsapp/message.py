@@ -96,20 +96,10 @@ class Message:
             self.__selenium_object.find_element_by_xpath("./div/div/span/div/div").click()
 
     def set_reply(self) -> None:
-        # The sleeps are to prevent bugs.
         """Sets the reply for the next message to this message.
-
-        Raises:
-            whatsapp.exceptions.CantSetReplyError: when an error in Selenium occurs.
         """
-        try:
-            self.__click_arrow_button()
-        except selenium.common.exceptions.NoSuchElementException as cant_set_reply:
-            raise whatsapp.exceptions.CantSetReplyError() from cant_set_reply
-        time.sleep(1)
-        # Click the reply button.
-        reply = self.__browser.find_element_by_xpath("/html/body/div[1]/div/span[4]/div/ul/li[2]")
-        reply.click()
+        # Double click on the message to add the reply.
+        selenium.webdriver.ActionChains(self.__browser).double_click(self.__selenium_object).perform()
 
     def remove(self) -> None:
         """Removes the message.
