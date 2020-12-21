@@ -22,6 +22,10 @@ class Group:
         self.group_name = group_name
         self.__browser = browser
 
+    def __str__(self) -> str:
+        string = f"A whatsapp.group.Group object. Group name: {self.group_name}"
+        return string
+
     def set_name(self, group_name: str) -> None:
         """Sets the group name.
 

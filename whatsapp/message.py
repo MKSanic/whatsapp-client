@@ -39,6 +39,9 @@ class Message:
         self.__selenium_object = selenium_object
         self.__browser = browser
 
+    def __str__(self) -> str:
+        return self.contents
+
     def get_image(self) -> str:
         """Downloads the image attached to a message and returns the image path in a string.
 
@@ -134,7 +137,7 @@ class Message:
                                                  "2]/div[2]").click()
         except selenium.common.exceptions.NoSuchElementException:
             pass
-        time.sleep(2)
+        time.sleep(1)
         # Remove the message for this person to make it gone entirely.
         self.__click_arrow_button()
         time.sleep(0.5)

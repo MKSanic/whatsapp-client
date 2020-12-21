@@ -28,3 +28,4 @@ import whatsapp.client
 import whatsapp.exceptions
 import whatsapp.message
 import whatsapp.person
+import whatsapp.group
