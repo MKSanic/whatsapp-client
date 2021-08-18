@@ -18,8 +18,9 @@ import os
 import functools
 import typing
 import PIL.Image
-import selenium.webdriver
-import selenium.webdriver.chrome.options
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.keys import Keys
 import selenium.common
 import webdriver_manager.chrome
 import whatsapp.exceptions
@@ -27,7 +28,7 @@ import whatsapp.message
 import whatsapp.person
 import whatsapp.group
 import whatsapp._logger
-
+from pyautogui import alert
 
 # noinspection PyArgumentList
 class WhatsappClient:
@@ -176,19 +177,25 @@ class WhatsappClient:
         Raises:
             whatsapp.exceptions.UnknownChatError: raises when the chat is not found.
         """
-        if isinstance(chat_name, whatsapp.group.Group):
+        '''if isinstance(chat_name, whatsapp.group.Group):
             chat_name = chat_name.group_name
         elif isinstance(chat_name, whatsapp.person.PersonDict):
-            chat_name = chat_name["person"]
+            chat_name = chat_name["person"]'''
         # Retrieve all the chats from the sidebar.
-        chats = self.__browser.find_element_by_id("pane-side").find_elements_by_tag_name("span")
-        for chat in chats:
-            if chat.text == chat_name:
-                chat.click()
+        chatDivs = self.__browser.find_elements_by_xpath('//*[@id="pane-side"]/div[1]/div/div/div')
+        for chat in chatDivs:
+            try:
+                cname = chat.find_element_by_xpath('.//div/div/div[2]/div[1]/div[1]/span/span').text
+                chat_span = chat.find_element_by_xpath('.//div/div/div[2]/div[1]/div[1]/span')
+            except:
+                cname = chat.find_element_by_xpath('.//div/div/div[2]/div[1]/div[1]/span').text
+                chat_span = chat.find_element_by_xpath('.//div/div/div[2]/div[1]/div[1]')
+            if cname == chat_name:
+                chat_span.click()
                 time.sleep(5)
                 # Reset the __send_input variable to prevent bugs.
                 self.__send_input = self.__browser.find_element_by_xpath(
-                    "/html/body/div[1]/div/div/div[4]/div/footer/div[1]/div[2]/div/div[2]")
+                    '//*[@id="main"]/footer/div[1]/div[2]/div/div[1]/div/div[2]')
                 return
         raise whatsapp.exceptions.UnknownChatError(chat_name)
 
@@ -319,10 +326,11 @@ class WhatsappClient:
         """
         for to_send in msg.splitlines():
             try:
-                self.__send_input.clear()
-                self.__send_input.send_keys(to_send + "\n")
+                self.__send_input.send_keys(to_send)
+                self.__send_input.send_keys(Keys.SHIFT,Keys.RETURN)
             except selenium.common.exceptions.StaleElementReferenceException:
                 pass
+            self.__send_input.send_keys("\n")
 
     def send_error_message(self, exception: Exception, executing: str) -> None:
         """Sends an error message to the chat the client is on.
@@ -403,6 +411,8 @@ class WhatsappClient:
             chat_name = chat_element.text
         except selenium.common.exceptions.NoSuchElementException:
             chat_name = None
+        except:
+            pass
         # Check if the chat is a group. If a Selenium error occurs, user = None.
         try:
             chat_img = self.__browser.find_element_by_xpath("/html/body/div[1]/div/div/div[4]/div/header/div["
@@ -520,12 +530,12 @@ class WhatsappClient:
 
         self.__logger.log(20, "Starting client.")
 
-        options = selenium.webdriver.chrome.options.Options()
+        options = Options()
         options.add_argument(f"user-data-dir={self.__user_data_dir}")
 
-        self.__browser = selenium.webdriver.Chrome(webdriver_manager.chrome.ChromeDriverManager(log_level=50).install(),
-                                                   chrome_options=options)
-
+        #self.__browser = webdriver.Chrome(webdriver_manager.chrome.ChromeDriverManager(log_level=50).install(),
+        #                                          chrome_options=options)
+        self.__browser = webdriver.Chrome(options=options)
         self.__browser.get("https://web.whatsapp.com/")
 
         # Find the QR-code element if the headless argument is True. If Whatsapp is already logged in,
@@ -585,7 +595,7 @@ class WhatsappClient:
             # Reset the __send_input variable to prevent bugs.
             try:
                 self.__send_input = self.__browser.find_element_by_xpath(
-                    "/html/body/div[1]/div/div/div[4]/div/footer/div[1]/div[2]/div/div[2]")
+                    '//*[@id="main"]/footer/div[1]/div[2]/div/div[1]/div/div[2]')
             except selenium.common.exceptions.NoSuchElementException:
                 time.sleep(5)
                 continue
